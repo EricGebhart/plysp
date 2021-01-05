@@ -11,11 +11,10 @@ from core import (
     # Ignore,
     Set,
     Def,
-    # Path,
+    If,
     Import,
     PyNew,
     Pyattr,
-    # FuncPath,
     Py_interop,
     Quote,
     SyntaxQuote,
@@ -286,6 +285,10 @@ class PlyspParse(object):
     def p_sexpr_def(self, p):
         "sexpr : DEF sexpr sexpr"
         p[0] = Def(p[2], p[3], self.env)
+
+    def p_sexpr_if(self, p):
+        "sexpr : IF sexpr sexpr sexpr"
+        p[0] = If(p[2], p[3], p[4], self.env)
 
     def p_sexpr_fn(self, p):
         "sexpr : FN vector sexpr"

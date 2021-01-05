@@ -385,6 +385,24 @@ class UnknownVariable(Exception):
     pass
 
 
+class If(object):
+    def __init__(self, test, true_expr, false_expr, stackframe):
+        self.test = test
+        self.true_expr = true_expr
+        self.false_expr = false_expr
+        self.stackframe = stackframe
+
+    def __str__(self):
+        return "(if %s %s %s)" % (self.test, self.true_expr, self.false_expr)
+
+    def __call__(self, env):
+        # print(self.symbol.__str__(), self.rest)
+        if eval_scalar(self.test, env):
+            return eval_scalar(self.true_expr, env)
+        else:
+            return eval_scalar(self.false_expr, env)
+
+
 class Def(object):
     def __init__(self, arg1, arg2, stackframe):
         self.symbol = arg1
@@ -568,7 +586,7 @@ def eval_list(contents, env):
 
     # I'm not clear on if this could even be hit.
     # parser gobbles, objects come about.
-    if type(first) in (Def, Py_interop, Import, Pyattr):
+    if type(first) in (Def, If, Py_interop, Import, Pyattr):
         return first(env)
 
     return first(env, rest)

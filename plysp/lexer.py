@@ -61,6 +61,7 @@ class PlyspLex(object):
         "ATOM",
         "SLASH",
         "KEYWORD",
+        "IF",
         "DEF",
         "NS",
         "IN_NS",
