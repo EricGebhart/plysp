@@ -271,7 +271,7 @@ class PlyspLex(object):
     #     return t
 
     def t_ATOM(self, t):
-        r"[-\/\*\+\!_a-zA-Z0-9<>]+"
+        r"[-\?\=\/\*\+\!_a-zA-Z0-9<>]+"
         t.type = self.reserved.get(t.value, "ATOM")
         return t
 

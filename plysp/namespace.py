@@ -3,7 +3,7 @@ import types
 
 # for now.  These should really only be within the namespace
 from functools import reduce
-import operator
+import operator as op
 
 
 # I think this is my atom...
@@ -137,26 +137,52 @@ class namespace(stackframe):
     def some_builtins(self):
         # These functions take a variable number of arguments
         variadic_operators = {
-            "+": ("add", 0),
-            "-": ("sub", 0),
-            "*": ("mul", 1),
-            "/": ("truediv", 1),
+            "+": (op.add, 0),
+            "-": (op.sub, 0),
+            "*": (op.mul, 1),
+            "/": (op.truediv, 1),
+            "==": (op.eq, 0),
+            "=": (op.eq, 0),
+            "max": (max, 0),
+            "min": (min, 0),
         }
 
-        def variadic_generator(fname, default):
-            func = getattr(operator, fname)
+        def variadic_generator(func, default):
             ret = lambda *args: reduce(func, args) if args else default
             # For string representation; otherwise just get 'lambda':
-            ret.__name__ = fname
+            ret.__name__ = func.__name__
             return ret
 
         for name, info in variadic_operators.items():
             self[name] = variadic_generator(*info)
 
+        # Something to start with.
         non_variadic_operators = {
-            "!": operator.inv,
-            "==": operator.eq,
+            "!": op.inv,
+            ">": op.gt,
+            "<": op.lt,
+            ">=": op.ge,
+            "<=": op.le,
+            "abs": abs,
+            "first": lambda x: x[0],
+            "last": lambda x: x[-1],
+            "rest": lambda x: x[1:],
+            "cons": lambda x, y: [x] + y,
+            "eq?": op.is_,
+            "equal?": op.eq,
+            "length": len,
+            "list": lambda *x: list(x),
+            "list?": lambda x: isinstance(x, List),
+            "map?": lambda x: isinstance(x, Map),
+            "vector?": lambda x: isinstance(x, Vector),
+            "not": op.not_,
+            "nil?": lambda x: x is None,
+            "empty?": lambda x: x == [],
+            "number?": lambda x: isinstance(x, Number),
+            "round": round,
+            "symbol?": lambda x: isinstance(x, Symbol),
         }
+
         self.update((name, func) for name, func in non_variadic_operators.items())
 
     def __str__(self):
