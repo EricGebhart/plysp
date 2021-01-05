@@ -132,12 +132,8 @@ class PlyspParse(object):
                 return
 
     def p_sexpr_atom(self, p):
-        """sexpr : ATOM
-        | ATOM SLASH ATOM
-        | ATOM SLASH ATOM SLASH ATOM
-        | ATOM SLASH ATOM SLASH ATOM SLASH ATOM
-        """
-        p[0] = Atom([p[i] for i in range(1, len(p) + 1, 2)])
+        "sexpr : ATOM"
+        p[0] = Atom(p[1])
 
     def p_keyword(self, p):
         "sexpr : KEYWORD"
@@ -359,8 +355,6 @@ class PlyspParse(object):
 
     def p_sexpr_pyattr(self, p):
         """ sexpr : PYATTR """
-        print(len(p))
-        print("py attr: ", p[1])
         attr = p[1][1:]
         p[0] = Pyattr(attr)
 

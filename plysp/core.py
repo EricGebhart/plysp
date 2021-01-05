@@ -58,7 +58,7 @@ class Map(ComparableExpr, ImmutableDict):
 
 class Atom(ComparableExpr):
     def __init__(self, name=None, value=None):
-        self.name = name
+        self.name = name.split("/")
         logger.info("Atom: %s " % name)
 
     def name(self):

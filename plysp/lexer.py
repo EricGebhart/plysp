@@ -257,7 +257,7 @@ class PlyspLex(object):
 
     # -foo.bar.baz  -foo.bar -foo etc.
     def t_PYATTR(self, t):
-        r"(\-(([-_A-Za-z0-9]+(\/[-_A-Za-z0-9]+)*)||([-[_A-Za-z0-9]+])))"
+        r"(\.\-(([-_A-Za-z0-9]+(\/[-_A-Za-z0-9]+)*)||([-[_A-Za-z0-9]+])))"
         return t
 
     # # foo.bar, foo.bar.baz
@@ -271,7 +271,7 @@ class PlyspLex(object):
     #     return t
 
     def t_ATOM(self, t):
-        r"[-\/\*\+\!_a-zA-Z0-9]+"
+        r"[-\/\*\+\!_a-zA-Z0-9<>]+"
         t.type = self.reserved.get(t.value, "ATOM")
         return t
 
