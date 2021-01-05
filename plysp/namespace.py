@@ -3,12 +3,13 @@ import types
 
 # for now.  These should really only be within the namespace
 from functools import reduce
-from operator import *
 import operator
 
 
 # I think this is my atom...
-class Symbol(str): pass
+class Symbol(str):
+    pass
+
 
 class stackframe(dict):
     "An environment: a dict of {'var':val} pairs, with an outer Env."
@@ -16,98 +17,113 @@ class stackframe(dict):
     def __init__(self, parms=(), args=(), outer=None):
         # Bind parm list to corresponding args, or single parm to list of args
         self.outer = outer
-        if isinstance(parms, Symbol): 
-            self.update({parms:list(args)})
-        else: 
+        # print("stackframe")
+        # print(parms, type(parms))
+        # print(args)
+        if isinstance(parms, Symbol):
+            self.update({parms: list(args)})
+
+        else:
             if len(args) != len(parms):
-                raise TypeError('expected %s, given %s, ' 
-                                % (to_string(parms), to_string(args)))
-            self.update(list(zip(parms,args)))
+                raise TypeError("expected %s, given %s, " % (parms, args))
+            # All we get for parms are simple atoms.
+            parms = [p.name[0] for p in parms]
+            self.update(list(zip(parms, args)))
 
     def find_namespace(self):
-        "Find path var in the stackframe."
+        "Find the namepace at the top of the envs."
         ns = self.outer
         while ns.outer is not None:
             ns = ns.outer
-        return (ns)
-            
-    def find_path_in_ns(self,var):
-        print ("FIND Path IN", self.name)
-        print (var)
+        return ns
+
+    def find_path_in_ns(self, var):
+        # print("FIND Path IN", self.name)
+        # print(var)
 
         thing = None
         if var[0] in self:
-            print (self.__getitem__(var[0]))
-            print (type(self.__getitem__(var[0])))
+            # print(self.__getitem__(var[0]))
+            # print(type(self.__getitem__(var[0])))
 
             thing = self.__getitem__(var[0])
             rest = var[1:]
 
-            print ("Find Path in", thing, rest)
+            # print("Find Path in", thing, rest)
 
             if rest is None:
-                return(thing)
+                return thing
 
-            
-            if (type (thing) is types.ModuleType):
-                print ("found module thing")
-                print ("rest is; ", rest[0])
-                print ("returning : ", rest[0])
+            # if type(thing) is types.ModuleType:
+            # potential BUG here.
+            if isinstance(thing, types.ModuleType):
+                # print("found module thing")
+                # print("rest is; ", rest[0])
+                # print("returning : ", rest[0])
                 thing = thing.__getattribute__(rest[0])
 
             elif isinstance(thing, namespace):
-                thing = find_path_in_ns(thing, rest)
+                thing = self.find_path_in_ns(rest)
 
-        return(thing)
-
-
+        return thing
 
     # at least at the moment, paths are always at the name space level.
     def find_path(self, path):
-        print("FIND Path")
-        ns = self.find_namespace(self)
-        print("NS:", ns.items())
-        ns.find_path_in_ns(self, path.path_list)
-            
-    def __find__(self, var):
+        # print("FIND Path")
+        ns = self.find_namespace()
+        # print("NS:", ns.items())
+        return ns.find(path)
+
+    def find(self, var):
         "Find the innermost Env where var appears."
-        print ("stackframe: ", var)
-        if var in self:
-            print ("Find - found: ", var)
-            return (self.__getitem__(var))
-        elif self.outer is None: raise LookupError(var)
-        else: return self.outer.find(var)
+
+        # has to be a namespace, so go look there.
+        if len(var) > 1:
+            return self.find_path(var)
+
+        elif len(var) == 1:
+            var = var[0]
+
+        if var in self.keys():
+            # print("Find - found: ", var)
+            return self.__getitem__(var)
+        elif self.outer is None:
+            raise LookupError(var)
+
+        else:
+            return self.outer.find(var)
 
 
 class namespace(stackframe):
     def __init__(self, name):
         stackframe.__init__(self)
         if name is None:
-           name = "User"
+            name = "User"
 
         self.outer = None
 
         self.stack = []
 
-        # we can reconstitute.   
-        self.imports=[]
-        self.requires=[]
-        
+        # we can reconstitute.
+        self.imports = []
+        self.requires = []
+
         # At some point we need to try to load a file by that name
         # to create a working namespace.
         # We need a load function first...
-           
+
         self.name = name
         # should be able to do this with py_import() below
         # from builtins import *
-        [self.set_symbol(name, obj) for name, obj
-                                in __builtins__.items() if
-                                callable(obj)]
+        [
+            self.set_symbol(name, obj)
+            for name, obj in __builtins__.items()
+            if callable(obj)
+        ]
 
         self.some_builtins()
 
-
-        if (name == "plysp/core"):
+        if name == "plysp/core":
             self.py_import("math")
             self.py_import("cmath")
             self.py_import("operator", "op")
@@ -120,14 +136,16 @@ class namespace(stackframe):
 
     def some_builtins(self):
         # These functions take a variable number of arguments
-        variadic_operators = {'+': ('add', 0),
-                              '-': ('sub', 0),
-                              '*': ('mul', 1),
-                              '/': ('truediv', 1)}
+        variadic_operators = {
+            "+": ("add", 0),
+            "-": ("sub", 0),
+            "*": ("mul", 1),
+            "/": ("truediv", 1),
+        }
 
         def variadic_generator(fname, default):
             func = getattr(operator, fname)
-            ret = (lambda *args: reduce(func, args) if args else default)
+            ret = lambda *args: reduce(func, args) if args else default
             # For string representation; otherwise just get 'lambda':
             ret.__name__ = fname
             return ret
@@ -136,14 +154,13 @@ class namespace(stackframe):
             self[name] = variadic_generator(*info)
 
         non_variadic_operators = {
-            '!': operator.inv,
-            '==': operator.eq,
+            "!": operator.inv,
+            "==": operator.eq,
         }
-        self.update((name, func) for name, func in
-                    non_variadic_operators.items())
+        self.update((name, func) for name, func in non_variadic_operators.items())
 
     def __str__(self):
-        return ('<Namespace: %s>' % x.name)
+        return "<Namespace: %s>" % self.name
 
     def add_import(self, import_obj):
         self.imports.append(import_obj)
@@ -157,11 +174,10 @@ class namespace(stackframe):
         # at the moment there is always a frame on the stack.
 
         if len(self.stack) > 0:
-            self.stack[-1].__setitem__(name,val)
+            self.stack[-1].__setitem__(name, val)
         else:
             self.__setitem__(name, val)
-        
-        
+
     def push_stack(self):
         if len(self.stack) > 0:
             outer = self.stack[-1]
@@ -169,33 +185,32 @@ class namespace(stackframe):
             outer = self
 
         self.stack.append(stackframe(outer=outer))
-        return(self.stack[-1])
+        return self.stack[-1]
 
     def pop_stack(self):
-        if len(self.stack) > 0: 
+        if len(self.stack) > 0:
             self.stack = self.stack[0:-1]
-        
+
     def find(self, symbol):
         if isinstance(symbol, list):
-            print("find path NS", symbol)
+            # print("find path NS", symbol)
             sym = self.find_path_in_ns(symbol)
         else:
-            print("find from Stack", symbol)
+            # print("find from Stack", symbol)
             if len(self.stack) > 0:
-                sym = self.stack[-1].__find__(symbol)
+                sym = self.stack[-1].find(symbol)
             else:
-                sym = self.__find__(symbol)
-        return(sym)
-    
-        
+                sym = self.find(symbol)
+        return sym
+
     def __import_func__(self, name, func):
-        return(il.import_module(name).__getattribute__(func))
+        return il.import_module(name).__getattribute__(func)
 
     def __import_mod__(self, name):
-        return(il.import_module(name))
+        return il.import_module(name)
 
     def __import_pkg__(self, name, pkg):
-        return(il.import_module(name, pkg))
+        return il.import_module(name, pkg)
 
     def py_import(self, name, asname=None, pkg=None, functions=None):
         f = name.split(".")[-1:][0]
@@ -207,7 +222,7 @@ class namespace(stackframe):
             else:
                 asname = name
 
-        self.set_symbol(asname, {}) 
+        self.set_symbol(asname, {})
 
         if len(p) > 0:
             print("importing function %s %s as %s" % (p, f, asname))
@@ -227,46 +242,53 @@ class namespace(stackframe):
             self[asname] = self.__import_pkg__(name, pkg)
 
     def isfunc(self, obj):
-        return (isinstance(obj, types.MethodType)
-                or
-                isinstance(obj, types.FunctionType)
-                or
-                str(type(obj)) == "<class 'method-wrapper'>")
+        return (
+            isinstance(obj, types.MethodType)
+            or isinstance(obj, types.FunctionType)
+            or str(type(obj)) == "<class 'method-wrapper'>"
+        )
 
     def show_methods(self):
-        return([thing for thing in self.__dir__()
-                if self.isfunc(self.__getattribute__(thing))])
+        return [
+            thing
+            for thing in self.__dir__()
+            if self.isfunc(self.__getattribute__(thing))
+        ]
 
     def show_attributes(self):
-        return([thing for thing in self.__dir__()
-                if not self.isfunc(self.__getattribute__(thing))])
+        return [
+            thing
+            for thing in self.__dir__()
+            if not self.isfunc(self.__getattribute__(thing))
+        ]
 
     def is_module(self, thing):
-        return (str(type(thing)) == "<class 'module'>")
-            
+        return str(type(thing)) == "<class 'module'>"
+
     def show_module_or_func(self, thing):
-        print (thing, type (thing))
+        # print(thing, type(thing))
         if str(type(thing)) == "<class 'module'>":
-            return (dir(thing))
+            return dir(thing)
         else:
             return str(thing)
 
     def print_module_contents(self, k):
-        print ("------------------------------------------------------------")
-        print (k)
-        print (dir(self.__getitem__[k]))
+        print("------------------------------------------------------------")
+        print(k)
+        print(dir(self.__getitem__[k]))
 
     def show_python_callables(self):
         thing_keys = [thing for thing in self.keys()]
-        print ("Local")
-        [k for k in thing_keys if self.is_module(self.__getitem__(k)) != True]
-        [self.print_module_contents(k) \
-         for k in thing_keys if self.is_module(self.__getitem__(k)) == True]
-            
+        # print("Local")
+        [k for k in thing_keys if self.is_module(self.__getitem__(k)) is not True]
+        [
+            self.print_module_contents(k)
+            for k in thing_keys
+            if self.is_module(self.__getitem__(k)) is True
+        ]
 
     def show_stackframe(self):
-        return([thing for thing in self.stack])
-
+        return [thing for thing in self.stack]
 
 
 # importlib.__import__(name, globals=None, locals=None, fromlist=(), level=0)
@@ -285,9 +307,13 @@ class namespace(stackframe):
 # >>> a.bar
 # <bound method A.bar of <__main__.A instance at 0x00A9BC88>>
 # >>>
-# Bound methods have been "bound" (how descriptive) to an instance, and that instance will be passed as the first argument whenever the method is called.
+# Bound methods have been "bound" (how descriptive) to an instance, and
+# that instance will be passed as the first argument whenever the method
+# is called.
 
-# Callables that are attributes of a class (as opposed to an instance) are still unbound, though, so you can modify the class definition whenever you want:
+# Callables that are attributes of a class (as opposed to an instance)
+# are still unbound, though, so you can modify the class definition whenever
+# you want:
 
 
 # def spam():

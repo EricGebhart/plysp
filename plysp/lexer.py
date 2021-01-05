@@ -10,7 +10,8 @@ import ply.lex as lex
 # LETFN = Symbol.intern("letfn*");
 # DO = Symbol.intern("do");
 # FN = Symbol.intern("fn*");
-# FNONCE = (Symbol) Symbol.intern("fn*").withMeta(RT.map(Keyword.intern(null, "once"), RT.T));
+# FNONCE = (Symbol) Symbol.intern("fn*").withMeta(
+#                          RT.map(Keyword.intern(null, "once"), RT.T));
 # QUOTE = Symbol.intern("quote");
 # THE_VAR = Symbol.intern("var");
 # DOT = Symbol.intern(".");
@@ -54,58 +55,83 @@ class PlyspLex(object):
         self.lexer = lex.lex(module=self, **kwargs)
         return self.lexer
 
-    reserved = {'nil': 'NIL'}
+    reserved = {"nil": "NIL"}
 
-    tokens = ['ATOM', 'KEYWORD',
-              'DEF', 'NS',
-              'IN_NS', 'IMPORT', 'AS',
-              'PATH', 'NEW', 
-              'PYATTR',
-              'LSETBRACE',
-              #'LIGNOREFORM',
-              'STRING', 'DOT',
-              'FLOAT', 'INTEGER',
-              'NUMBER',
-
-              'READMACRO',  # going away soon...
-
-              'DEREF_SYM', 'DEREF',
-              'QUOTE_SYM', 'QUOTE',
-              'UNQUOTE_SYM', 'UNQUOTE',
-              'SYNTAX_QUOTE_SYM', 'SYNTAX_QUOTE',
-              'UNQUOTE_SPLICING_SYM', 'UNQUOTE_SPLICING',
-
-              'REGEX', 'VAR_QUOTE', 'VAR', 'AUTO_GENSYM', 'GENSYM',
-              'UUID', 'INST'
-
-              'DISCARD', 'INLINE_FN', 'ANONYMOUS_ARG',
-
-              'OCTAL', 'HEX', 'BASE2',
-              
-              'CHAR', 'UNICODE_CHAR', 'OCTAL_CHAR',
-
-              'LBRACKET', 'RBRACKET',
-              'LBRACE', 'RBRACE',
-              'LPAREN', 'RPAREN',
+    tokens = [
+        "ATOM",
+        "SLASH",
+        "KEYWORD",
+        "DEF",
+        "NS",
+        "IN_NS",
+        "IMPORT",
+        "AS",
+        "PATH",
+        "NEW",
+        "PYATTR",
+        "LSETBRACE",
+        # 'LIGNOREFORM',
+        "STRING",
+        "DOT",
+        "FLOAT",
+        "INTEGER",
+        "NUMBER",
+        "READMACRO",  # going away soon...
+        "DEREF_SYM",
+        "DEREF",
+        "QUOTE_SYM",
+        "QUOTE",
+        "UNQUOTE_SYM",
+        "UNQUOTE",
+        "SYNTAX_QUOTE_SYM",
+        "SYNTAX_QUOTE",
+        "UNQUOTE_SPLICING_SYM",
+        "UNQUOTE_SPLICING",
+        "REGEX",
+        "VAR_QUOTE",
+        "VAR",
+        "AUTO_GENSYM",
+        "GENSYM",
+        "UUID",
+        "INST",
+        "DISCARD",
+        "FN",
+        "INLINE_FN",
+        "ANONYMOUS_ARG",
+        "LET",
+        "OCTAL",
+        "HEX",
+        "BASE2",
+        "CHAR",
+        "UNICODE_CHAR",
+        "OCTAL_CHAR",
+        "LBRACKET",
+        "RBRACKET",
+        "LBRACE",
+        "RBRACE",
+        "LPAREN",
+        "RPAREN",
     ] + list(reserved.values())
 
-    t_LPAREN = r'\('
-    t_RPAREN = r'\)'
-    t_LBRACKET = r'\['
-    t_RBRACKET = r'\]'
-    t_LBRACE = r'\{'
-    t_RBRACE = r'\}'
-    t_ignore = ' ,\t\r'
-    t_ignore_COMMENT = r'\;.*'
-
+    t_LPAREN = r"\("
+    t_RPAREN = r"\)"
+    t_LBRACKET = r"\["
+    t_RBRACKET = r"\]"
+    t_LBRACE = r"\{"
+    t_RBRACE = r"\}"
+    t_ignore = " ,\t\r"
+    t_ignore_COMMENT = r"\;.*"
 
     # The next set of symbols to do.
-    
+
     # #  leading #
     # t_discard = r'\#_'
     # t_inline_fn = r'\#\('
+
+    # #'somevar or (var somevar)  returns reference to somevar.
     # t_var_quote = r"\#\'"
-    # t_var     = r"var"   ### #'somevar or (var somevar)  returns reference to somevar.
+    # t_var     = r"var"
+
     # t_uuid= r'\#uuid'
     # t_inst = r'\#inst'
 
@@ -127,29 +153,30 @@ class PlyspLex(object):
     # t_syntax_quote = r"syntax_quote"
     # t_unquote_splicing_sym = r"\~@"
     # t_unquote_splicing = r"unquote_splicing"
-    
+
     # t_octal = r"0[0-7]{2}"
     # t_hex   = r"0x[A-F0-9]{2,4}"
-    # t_base2 = r"2r[0,1]{4}"  # perhaps better to match [0-3]*[0-9]*r<number>... 0-36r really.
+    # t_base2 = r"2r[0,1]{4}"  # perhaps better to match [0-3]*[0-9]*r<number>.
+    #                          # .. 0-36r really.
     #                          # base 36 uses the alphabet entire.
 
     def t_KEYWORD(self, t):
-        r'\:[a-zA-Z_-]+'
+        r"\:[a-zA-Z_-]+"
         t.value = t.value[1:]
         return t
 
     def t_REGEX(self, t):
-        r'\#\"(\\.|[^\"])*\"'
+        r"\#\"(\\.|[^\"])*\""
         t.value = t.value[2:-1]
         return t
 
     def t_STRING(self, t):
-        r'\"(\\.|[^\"])*\"'
+        r"\"(\\.|[^\"])*\""
         t.value = t.value[1:-1]
         return t
 
     def t_UNICODE_CHAR(self, t):
-        r'\\u[A-F0-9]{4}'
+        r"\\u[A-F0-9]{4}"
         t.value = t.value[2:]
         return t
 
@@ -164,75 +191,74 @@ class PlyspLex(object):
         return t
 
     def t_NUMBER(self, t):
-        r'[+-]?((\d+(\.\d+)?([eE][+-]?\d+)?)|(\.\d+([eE][+-]?\d+)?))'
+        r"[+-]?((\d+(\.\d+)?([eE][+-]?\d+)?)|(\.\d+([eE][+-]?\d+)?))"
         val = t.value
-        if '.' in val or 'e' in val.lower():
-            t.type = 'FLOAT'
+        if "." in val or "e" in val.lower():
+            t.type = "FLOAT"
         else:
-            t.type = 'INTEGER'
+            t.type = "INTEGER"
         return t
 
     def t_NS(self, t):
-        r'ns'
+        r"ns"
         return t
 
     def t_IN_NS(self, t):
-        r'in-ns'
+        r"in-ns"
         return t
 
     def t_IMPORT(self, t):
-        r'import'
+        r"import"
         return t
 
     def t_AS(self, t):
-        r'as'
+        r"as"
         return t
 
     def t_DOT(self, t):
-        r'\.'
+        r"\."
         return t
 
     def t_DEF(self, t):
-        r'def'
+        r"def"
         return t
 
     def t_IF(self, t):
-        r'if'
+        r"if"
         return t
 
     def t_LET(self, t):
-        r'let\*'
+        r"let\*"
         return t
 
     def t_DO(self, t):
-        r'do'
+        r"do"
         return t
 
     def t_LETFN(self, t):
-        r'letfn\*'
+        r"letfn\*"
         return t
 
     def t_FN(self, t):
-        r'fn'
+        r"fn"
         return t
 
     def t_LOOP(self, t):
-        r'loop\*'
+        r"loop\*"
         return t
 
     def t_RECUR(self, t):
-        r'recur'
+        r"recur"
         return t
 
     def t_NEW(self, t):
-        r'new'
+        r"new"
         return t
 
     # -foo.bar.baz  -foo.bar -foo etc.
     def t_PYATTR(self, t):
-        r'(\-(([-_A-Za-z0-9]+(\/[-_A-Za-z0-9]+)*)||([-_A-Za-z0-9]+)))'
+        r"(\-(([-_A-Za-z0-9]+(\/[-_A-Za-z0-9]+)*)||([-[_A-Za-z0-9]+])))"
         return t
-
 
     # # foo.bar, foo.bar.baz
     # def t_PYPATH(self, t):
@@ -244,20 +270,19 @@ class PlyspLex(object):
     #     r'([-_A-Za-z0-9]+)\.'
     #     return t
 
-    def t_PATH(self, t):
-        r'[-_A-Za-z0-9]+(/[-_A-Za-z0-9]*)+'
-        return t
-
     def t_ATOM(self, t):
-        r'[\*\+\!\-\_a-zA-Z_-]+'
-        t.type = self.reserved.get(t.value, 'ATOM')
+        r"[-\/\*\+\!_a-zA-Z0-9]+"
+        t.type = self.reserved.get(t.value, "ATOM")
         return t
-
 
     # because tokens are added after the functions and
     # this needs to happen before readmacro.
     def t_LSETBRACE(self, t):
-        r'\#\{'
+        r"\#\{"
+        return t
+
+    def t_SLASH(self, t):
+        r"\/"
         return t
 
     # def t_LIGNOREFORM(self, t):
@@ -267,7 +292,7 @@ class PlyspLex(object):
     # placeholder.  Each of these needs to be handled
     # differently.  There are variations of each as well.
     # Handle them with a symbol table somehow ?
-    # https://clojure.org/guides/weird_characters 
+    # https://clojure.org/guides/weird_characters
     #
 
     # def t_READMACRO(self, t):
@@ -276,7 +301,7 @@ class PlyspLex(object):
     #     return t
 
     def t_newline(self, t):
-        r'\n+'
+        r"\n+"
         t.lexer.lineno += len(t.value)
 
     def t_error(self, t):
@@ -287,98 +312,109 @@ class PlyspLex(object):
 # discard #_  next symbol, dict, vector, or list.
 
 # Declare the state
-states = (
-  ('discard','exclusive'),
-)
+states = (("discard", "exclusive"),)
+
 
 # Match on #_ Potentially enter discard state, or discard the next token.
 def t_discard(t):
-    r'\#_'
-    t.lexer.discard_start = t.lexer.lexpos        # Record the starting position
-    t.lexer.level = 1                          # Initial brace level
+    r"\#_"
+    t.lexer.discard_start = t.lexer.lexpos  # Record the starting position
+    t.lexer.level = 1  # Initial brace level
     start_token = t.lexer.token()
-    if start_token not in ['\{', '\[', '\(']:
+    if start_token not in [r"\{", r"\[", r"\("]:
         t.lexer.skip(1)
     else:
         t.lexer.skip_form = start_token
-        t.lexer.begin('discard')                     # Enter 'ccode' state
+        t.lexer.begin("discard")  # Enter 'ccode' state
+
 
 # Rules for the ccode state
-def t_discard_lbrace(t):     
-    r'\{'
-    if t.lexer.skip_form is '\{':
-        t.lexer.level +=1                
+def t_discard_lbrace(t):
+    r"\{"
+    if t.lexer.skip_form == r"\{":
+        t.lexer.level += 1
+
 
 def t_discard_rbrace(t):
-    r'\}'
-    if t.lexer.skip_form is '\{':
-        t.lexer.level -=1
+    r"\}"
+    if t.lexer.skip_form == r"\{":
+        t.lexer.level -= 1
 
         # If closing brace, return the code fragment
         if t.lexer.level == 0:
-            t.value = t.lexer.lexdata[t.lexer.code_start:t.lexer.lexpos+1]
+            t.value = t.lexer.lexdata[t.lexer.code_start : t.lexer.lexpos + 1]
             t.type = "DISCARD"
-            t.lexer.lineno += t.value.count('\n')
-            t.lexer.begin('INITIAL')           
+            t.lexer.lineno += t.value.count("\n")
+            t.lexer.begin("INITIAL")
             return t
 
+
 # Rules for the ccode state
-def t_discard_lbracket(t):     
-    r'\['
-    if t.lexer.skip_form is '\[':
-        t.lexer.level +=1                
+def t_discard_lbracket(t):
+    r"\["
+    if t.lexer.skip_form == r"\[":
+        t.lexer.level += 1
+
 
 def t_discard_rbracket(t):
-    r'\]'
-    if t.lexer.skip_form is '\[':
-        t.lexer.level -=1
+    r"\]"
+    if t.lexer.skip_form == r"\[":
+        t.lexer.level -= 1
 
         # If closing brace, return the code fragment
         if t.lexer.level == 0:
-            t.value = t.lexer.lexdata[t.lexer.code_start:t.lexer.lexpos+1]
+            t.value = t.lexer.lexdata[t.lexer.code_start : t.lexer.lexpos + 1]
             t.type = "DISCARD"
-            t.lexer.lineno += t.value.count('\n')
-            t.lexer.begin('INITIAL')           
+            t.lexer.lineno += t.value.count("\n")
+            t.lexer.begin("INITIAL")
             return t
+
 
 # Rules for the ccode state
-def t_discard_lparen(t):     
-    r'\('
-    if t.lexer.skip_form is '\(':
-        t.lexer.level +=1                
+def t_discard_lparen(t):
+    r"\("
+    if t.lexer.skip_form == r"\(":
+        t.lexer.level += 1
+
 
 def t_discard_rparen(t):
-    r'\)'
-    if t.lexer.skip_form is '\(':
-        t.lexer.level -=1
+    r"\)"
+    if t.lexer.skip_form == r"\(":
+        t.lexer.level -= 1
 
         # If closing brace, return the code fragment
         if t.lexer.level == 0:
-            t.value = t.lexer.lexdata[t.lexer.code_start:t.lexer.lexpos+1]
+            t.value = t.lexer.lexdata[t.lexer.code_start : t.lexer.lexpos + 1]
             t.type = "DISCARD"
-            t.lexer.lineno += t.value.count('\n')
-            t.lexer.begin('INITIAL')           
+            t.lexer.lineno += t.value.count("\n")
+            t.lexer.begin("INITIAL")
             return t
 
-# C or C++ comment (ignore)    
+
+# comment (ignore)
 def t_discard_comment(t):
-    r'(/;.*)'
+    r"(;.*)"
     pass
+
 
 # C string
 def t_discard_string(t):
-   r'\"([^\\\n]|(\\.))*?\"'
+    r"\"([^\\\n]|(\\.))*?\""
+
 
 # C character literal
 def t_discard_char(t):
-   r'\'([^\\\n]|(\\.))*?\''
+    r"\'([^\\\n]|(\\.))*?\'"
+
 
 # Any sequence of non-whitespace characters (not braces, strings)
 def t_discard_nonspace(t):
-   r'[^\s\{\}\'\"]+'
+    r"[^\s\{\}\'\"]+"
+
 
 # Ignored characters (whitespace)
 t_discard_ignore = " \t\n"
+
 
 # For bad characters, we just skip over it
 def t_discard_error(t):

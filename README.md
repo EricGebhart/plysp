@@ -140,8 +140,8 @@ IMHO, The best adaptations, that I have found, of Peter's Lispys are these.
 [Adam Haney's Lispy with dialects] (https://github.com/adamhaney/lispy)
 and 
 [Norvigs Lisps for Py3k](https://github.com/Shambles-Dev/Norvig_Lisps_for_Py3k) 
-which is a cleaned up version of the originals. They stay close to the
-originals but with better coding style.
+which is a cleaned up version of the originals. They are easier on the
+eyes for python 3.
 
 [another more advanced lispy](https://github.com/ridwanmsharif/lispy)
 
@@ -149,6 +149,8 @@ originals but with better coding style.
 
 Another good resource for lisps is [Learn C and build your own Lisp](https://github.com/orangeduck/BuildYourOwnLisp)  I already know C, but this is a fun project and a great way to learn C and a lisp similar to Scheme.
 
+### MAL - Make a lisp. 
 
+Everyone should [make a lisp.](https://github.com/kanaka/mal)
 
 

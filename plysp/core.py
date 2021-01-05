@@ -1,14 +1,20 @@
-import operator
+# import operator
+import types
+import logs
+import logging
 from funktown import ImmutableDict, ImmutableVector, ImmutableList
-from functools import reduce
-from namespace import namespace
+
+# from functools import reduce
+from namespace import namespace, stackframe
 
 isa = isinstance
 
+logger = logs.add_file_handler(logging.getLogger(), "info", "plysp.log")
+
+
 class ComparableExpr(object):
     def __eq__(self, other):
-        return (isinstance(other, self.__class__)
-                and self.__dict__ == other.__dict__)
+        return isa(other, self.__class__) and self.__dict__ == other.__dict__
 
     def __ne__(self, other):
         return not (self == other)
@@ -31,92 +37,133 @@ class Map(ComparableExpr, ImmutableDict):
         return ImmutableDict.__eq__(self, other)
 
     def __str__(self):
-        inner = ', '.join(['%s %s' % (k, v) for k, v in x.items()])
-        return '{%s}' % inner
+        inner = ", ".join(["%s %s" % (k, v) for k, v in self.items()])
+        return "{%s}" % inner
 
     def __repr__(self):
-        return 'MAP(%s)' % (str(self))
+        return "MAP(%s)" % (str(self))
 
     def __call__(self, env, key=None):
         if key is not None:
             return self.get(key)
         else:
-            return(Map(dict([(env.eval_scalar(k), env.eval_scalar(v))
-                             for k, v in x.items()])))
+            return Map(
+                dict([(eval_scalar(k), eval_scalar(v)) for k, v in self.items()])
+            )
 
         # if not rest.rest().empty():
         #     raise TypeError("Map lookup takes one argument")
-        # return self.get([env.eval_scalar(rest.first())])
+        # return self.get([eval_scalar(rest.first())])
 
 
 class Atom(ComparableExpr):
     def __init__(self, name=None, value=None):
         self.name = name
+        logger.info("Atom: %s " % name)
 
     def name(self):
         return self.name
 
     def __str__(self):
-        return(self.name)
+        return "/".join(self.name)
+
+    def pypath(self):
+        return ".".join(self.name)
 
     def __repr__(self):
-        return "ATOM(%s)" % (self.name)
+        return "/".join(self.name)
+        # return "ATOM(%s)" % (self.name)
 
     def __call__(self, env, rest=None):
+        logger.debug("call Atom")
+        logger.debug(self.name, rest)
+
+        logger.debug(type(env))
+
         val = env.find(self.name)
+
+        logger.debug("----------")
+        logger.debug(type(val))
 
         if not val:
             raise UnknownVariable("Function %s is unknown" % self.name)
 
-        if type(val) is Atom:
-            return str(val)
-        else:
-            if rest is None:
-                return (env.eval_scalar(val)) 
-            else:
-                args = map((lambda obj: env.eval_scalar(obj)), rest)
-                return val(*args)
-
-            # else:
-            # raise TypeError("value of %s is not callable" % self.name)
+        return val
 
 
 class Octal(object):
     pass
 
+
 class Hex(object):
     pass
+
 
 class Base2(object):
     pass
 
+
+class Char(object):
+    pass
+
+
 class Uchar(object):
     pass
+
+
 class Ochar(object):
     pass
+
+
 class Deref(object):
     pass
+
+
 class Quote(object):
     pass
+
+
 class UnQuote(object):
     pass
+
+
 class SyntaxQuote(object):
     pass
+
+
 class UnQuote_splicing(object):
     pass
+
+
 class Var(object):
     pass
-class gensym(object):
+
+
+class Gensym(object):
     pass
+
+
 class Auto_gensym(object):
     pass
+
+
+class Regex(object):
+    pass
+
+
 class Uuid(object):
     pass
+
+
 class Inst(object):
     pass
+
+
 class Inline_func(object):
     pass
-class anonymous_Arg(object):
+
+
+class Anonymous_Arg(object):
     pass
 
 
@@ -139,7 +186,7 @@ class ComparableIter(ComparableExpr):
             for a, b in zip(self, other):
                 if a != b:
                     return False
-        except:
+        except Exception:
             return False
         else:
             return True
@@ -150,18 +197,20 @@ class List(ComparableIter, ImmutableList):
         ImmutableList.__init__(self, args)
 
     def __str__(self):
-        inner = ' '.join([self.tostring(x) for x in x])
-        return '(%s)' % inner
+        inner = " ".join([str(x) for x in self])
+        return "(%s)" % inner
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__.upper(),
-                           ','.join([repr(el) for el in self]))
+        return "%s(%s)" % (
+            self.__class__.__name__.upper(),
+            ",".join([repr(el) for el in self]),
+        )
 
     def __call__(self, env, index=None):
         if index is None:
-            return (env.eval_list(self))
+            return eval_list(self, env)
         else:
-            return (self.get(index))
+            return self.get(index)
 
 
 class Vector(ComparableIter, ImmutableVector):
@@ -169,18 +218,17 @@ class Vector(ComparableIter, ImmutableVector):
         ImmutableVector.__init__(self, args)
 
     def __str__(self):
-        inner = ' '.join([self.tostring(x) for x in x])
-        return '[%s]' % inner
+        inner = " ".join([str(x) for x in self])
+        return "[%s]" % inner
 
     def __repr__(self):
-        return ("%s(%s)" % (self.__class__.__name__,
-                           str(self)))
+        return "%s(%s)" % (self.__class__.__name__, str(self))
 
     def __call__(self, env, index=None):
         if index is not None:
             return self.get(index)
         else:
-            return Vector(*[env.eval_scalar(el) for el in self])
+            return Vector(*[eval_scalar(el) for el in self])
 
 
 class Keyword(ComparableExpr):
@@ -188,87 +236,38 @@ class Keyword(ComparableExpr):
         self.name = ":" + name
 
     def key(self):
-        return (self.__repr__())
+        return self.__repr__()
 
     def __str__(self):
-        return (self.name)
+        return self.name
 
     def __repr__(self):
-        return ("Keyword: (%s)" % self.name)
+        return "Keyword: (%s)" % self.name
 
     def __lt__(self, other):
-        return (self.key() < other.key())
+        return self.key() < other.key()
 
     def __eq__(self, other):
-        return (self.key() == other.key())
+        return self.key() == other.key()
 
     def __hash__(self):
-        return (hash(self.key()))
+        return hash(self.key())
 
     def __call__(self, env, rest):
-        #return (d.get(self.key()))
+        # return (d.get(self.key()))
         if not rest.rest().empty():
             raise TypeError("Keyword lookup takes one argument")
-        return (env.eval_scalar(rest.first()).get(self.key))
+        return eval_scalar(rest.first()).get(self.key)
 
 
 class Set(frozenset):
-
     def __str__(self):
-        inner = ' '.join([self.tostring(x) for x in x])
-        return '#{%s}' % inner
+        inner = " ".join([self.tostring(x) for x in self])
+        return "#{%s}" % inner
 
     def __repr__(self):
-        inner = ' '.join([str(x) for x in self])
-        return '#{%s}' % inner
-
-class Path(object):
-    def __init__(self, value):
-        self.name = value
-
-    def pypath (self):
-        return(self.name.replace('/', '.'))
-
-    def path_list(self):
-        return(self.name.split('/'))
-
-    def __str__(self):
-        return (self.name)
-      
-    def __repr__(self):
-        return ('%s %s' % (x, type(self.find(x.path_list()))))
-
-    def __call__(self, env):
-        return (env.find(self.path_list()))
-
-class FuncPath(object):
-    def __init__(self, value, args):
-        self.name = value
-        self.args = args
-
-    def path_list(self):
-        return(self.name.split('/'))
-      
-    def __repr__(self):
-        print(type(self))
-        return ("(%s %s)" % (self.name, self.args))
-
-    # find the function math/sin or whatever in the namespace
-    # then call it with the args.
-    # this really needs to push a stackframe, do the bindings like that.
-    def __call__(self, env):
-        # print ("funcPath Call")
-        # print ("path list is:", self.path_list())
-        # print ("Args are:", self.args)
-
-        func = env.find(self.path_list())
-
-        #print ("Func is: ", func)
-
-        val = func(env.eval_scalar(*self.args))
-
-        #print ("val is: ", val)
-        return (val)
+        inner = " ".join([str(x) for x in self])
+        return "#{%s}" % inner
 
 
 class Import(object):
@@ -279,8 +278,6 @@ class Import(object):
     def __call__(self, env):
         if type(self.name) == Atom:
             name = self.name.name
-        if type(self.name) == Path:
-            name = self.path_list()
         else:
             name = self.name
 
@@ -289,18 +286,9 @@ class Import(object):
 
     def __repr__(self):
         if self.asname is not None:
-            return ("(import %s as %s)" % (self.name, self.asname))
+            return "(import %s as %s)" % (self.name, self.asname)
         else:
-            return ("(import %s)" % self.name)
-
-
-class Procedure(object):
-    "A user-defined procedure."
-    def __init__(self, parms, exp, env):
-        self.parms, self.exp, self.env = parms, exp, env
-    def __call__(self, *args): 
-        return eval(self.exp, Env(self.parms, args, self.env))
-
+            return "(import %s)" % self.name
 
 
 class PyNew(object):
@@ -310,38 +298,39 @@ class PyNew(object):
         self.args = args
 
     def path_list(self):
-        if '/' in self.classpath:
-            return(self.attr.split('/'))
+        if "/" in self.classpath:
+            return self.attr.split("/")
         else:
             return self.classpath
 
     def __repr__(self):
-        return ("New %s with Args: %s" % (self.classpath, self.args))
+        return "New %s with Args: %s" % (self.classpath, self.args)
 
     def __call__(self, env):
         self.__repr__()
         classobj = env.find(self.path_list())
-        return(classobj(*self.args))
+        return classobj(*self.args)
 
 
-    
 class Pyattr(object):
     def __init__(self, attr):
         self.attr = attr
 
     def __str__(self):
-        return ("-%s" % self.attr)
+        return "-%s" % self.attr
 
     def path_list(self):
-        return(self.attr.split('/'))
+        return self.attr.split("/")
 
     def __repr__(self):
-        return ('%s %s' % (x, type(self.find(x.path_list()))))
+        # return "%s %s" % (x, type(self.find(x.path_list())))
+        return self.attr
 
     def __call__(self, env):
         self.__repr__()
         path = self.path_list()
-        return(env.find(path))
+        return env.find(path)
+
 
 class Py_interop(object):
     def __init__(self, method, obj, args):
@@ -350,10 +339,10 @@ class Py_interop(object):
         self.args = args
 
     def __str__(self):
-        return(self.__repr__())
+        return self.__repr__()
 
     def __repr__(self):
-        return ("%s %s %s" % (self.method, self.obj, self.args))
+        return "%s %s %s" % (self.method, self.obj, self.args)
 
     def __call__(self, env):
         self.__repr__()
@@ -366,18 +355,34 @@ class Py_interop(object):
         # print ("result is", r)
         # return (r)
 
-        return(env.find(self.obj).__getattribute__(self.method)(*self.args))
-
+        return env.find(self.obj).__getattribute__(self.method)(*self.args)
 
 
 class Function(ComparableExpr):
-    pass
+    def __init__(self, parms, body, stackframe):
+        self.parms = parms
+        self.body = body
+        self.stackframe = stackframe
 
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return "(fn %s %s)" % (self.parms, self.body)
+
+    def __call__(self):
+        return self.__eval__
+
+    def __eval__(self, env, args):
+        return eval_list(self.body, stackframe(self.parms, args, env))
+
+
+class Let(ComparableExpr):
+    pass
 
 
 class UnknownVariable(Exception):
     pass
-
 
 
 class Def(object):
@@ -389,30 +394,36 @@ class Def(object):
         if type(self.symbol) is not Atom:
             raise TypeError("First argument to def must be atom")
         stackframe.set_symbol(self.symbol, self.rest)
-        #self.__call__(stackframe)
-        #return (self.symbol)
+        # self.__call__(stackframe)
+        # return (self.symbol)
 
     def __str__(self):
-        return(self.symbol.name())
+        return self.symbol.name()
 
     def __call__(self, env):
-        env.set_symbol(self.symbol.name,
-                       env.eval_scalar(self.rest))
-        return (self.symbol)
-
+        # print(self.symbol.__str__(), self.rest)
+        env.set_symbol(self.symbol.__str__(), eval_scalar(self.rest))
+        return self.symbol
 
 
 class Env(object):
+    """
+    This is our programming Environment, which has namespaces. It has
+    the core namespace, and will create a "User" namespace if there is none.
+    We can create and navigate our namespaces, and find symbols.
+    Our scoping environments, (stackframe), chain from this Environment.
+    """
 
     def __init__(self, ns=None):
 
         # for now it just has python callables
-        # once there is a yalispy.core.yl then we
+        # once there is a plysp.core.yl then we
         # need to start loading it, so we have more.
 
         self.eval_verbose = False
         self.core_ns = namespace("plysp/core")
-        self.namespaces = {"plysp/core" : self.core_ns}
+        self.namespaces = {"plysp/core": self.core_ns}
+        self.outer = None
 
         if ns is None:
             ns = "User"
@@ -422,20 +433,20 @@ class Env(object):
 
     def in_ns(self, name):
         if type(name) is not str:
-            name = name.name  # it's a Path or an Atom
+            name = name.name  # it's an Atom
         if name in self.namespaces.keys():
             self.current_ns = self.namespaces[name]
-            return (self.current_ns)
+            return self.current_ns
         else:
-            return (None)
+            return None
 
     def new_ns(self, name):
         if type(name) is not str:
-            name = name.name  # it's a Path or an Atom
+            name = name.name  # it's an Atom
         if name not in self.namespaces.keys():
             self.current_ns = namespace(name)
             self.namespaces[name] = self.current_ns
-        return(self.current_ns)
+        return self.current_ns
 
     def load_ns(self, name):
         """read a file and load it into it's ns"""
@@ -443,79 +454,125 @@ class Env(object):
 
     def find(self, symbol):
         if self.eval_verbose is True:
-            print ("EnV find", type(symbol), "in", self.current_ns.name)
+            logger.debug("EnV find", type(symbol), "in", self.current_ns.name)
         sym = self.current_ns.find(symbol)
-        if sym == None:
+        if sym is None:
             if self.eval_verbose is True:
-                print ("EnV find", type(symbol), "in", self.core_ns.name)
+                logger.debug("EnV find", type(symbol), "in", self.core_ns.name)
             sym = self.core_ns.find(symbol)
-        return (sym)
+        return sym
 
     def set_symbol(self, symbol, val):
-        if self.eval_verbose is True:
-            print ("set symbol")
-            print (type(symbol))
-            print (val)
-        sym = self.current_ns.set_symbol(symbol, val)
-
-    def to_string(x):
-        "Convert a Python object back into a Lisp-readable string."
-        if x is True: return "#t"
-        elif x is False: return "#f"
-        elif isa(x, Symbol): return x
-        elif isa(x, str): return '"%s"' % x.encode('unicode_escape').decode('utf_8').replace('"',r'\"')
-        elif isa(x, list): return '('+' '.join(map(to_string, x))+')'
-        elif isa(x, complex): return str(x).replace('j', 'i')
-        else: return str(x)
-
-    def tostring(self, x):
-        if x is None:
-            return 'nil'
-        elif type (x) is str:
-            return (x)
-        elif type(x) in (int, float):
-            return str(x)
-        elif x.__class__.__name__ in ['function', 'builtin_function_or_method']:
-            return str(x)
-        elif type(x) in (Atom, Keyword, list, List, namespace, Vector, Map, Set,\
-                         Pyattr, Path, PyNew, FuncPath):
-            return x.__str__()
-        else:
-            print(str(x), type(x))
-            raise TypeError("Sorry can't pretty print, %s is unknown!" % x)
+        logger.debug("set symbol")
+        logger.debug(type(symbol))
+        logger.debug(val)
+        return self.current_ns.set_symbol(symbol, val)
 
 
-    def eval_scalar(self, x):
-        if self.eval_verbose is True:
-            print("Eval: ", x, type(x))
-
-        if x is None:
-            return
-        if type(x) in (int, float, str, Keyword):
-            return x
-        elif type(x) in (Atom, Import, Vector, Map, List, Set, Pyattr, FuncPath, Path):
-            return(x(self))
-        elif type(x) is List:
-            return self.eval_list(contents)
+def to_string(x):
+    "Convert a Python object back into a Lisp-readable string."
+    if x is True:
+        return "#t"
+    elif x is False:
+        return "#f"
+    elif isa(x, Atom):
         return x
+    elif isa(x, str):
+        return '"%s"' % x.encode("unicode_escape").decode("utf_8").replace('"', r"\"")
+    elif isa(x, list):
+        return "(" + " ".join(map(str, x)) + ")"
+    elif isa(x, complex):
+        return str(x).replace("j", "i")
+    else:
+        return str(x)
 
 
-    def eval_list(self, contents):
-        if contents.empty():
-            return List()  # ()
+def tostring(x):
+    if x is None:
+        return "nil"
+    elif type(x) is str:
+        return x
+    elif type(x) in (int, float):
+        return str(x)
+    elif x.__class__.__name__ in [
+        "function",
+        "builtin_function_or_method",
+    ]:
+        return str(x)
 
-        first = contents.first()
-        rest = contents.rest()
+    elif type(x) in (
+        Atom,
+        Keyword,
+        list,
+        List,
+        namespace,
+        Vector,
+        Map,
+        Set,
+        Pyattr,
+        PyNew,
+    ):
+        return x.__str__()
+    else:
+        print(str(x), type(x))
+        raise TypeError("Sorry can't pretty print, %s is unknown!" % x)
 
-        #print("Eval List: ", first, rest)
 
-        if type(first) in (Map, Keyword, Atom):
-            return(first(self, rest))
+def eval_scalar(x, env=None):
+    if x is None:
+        return
+    if type(x) in (int, float, str, Keyword):
+        return x
+    elif type(x) in (Atom, Import, Vector, Map, List, Set, Pyattr):
+        return x(env)
+    elif type(x) is List:
+        return eval_list(x.contents, env)
+    # Needs to create a new scope. stackframe.
+    elif type(x) in (Function, types.FunctionType):
+        return x(env)
+    return x
 
-        if type(first) in (Def, Py_interop, FuncPath, Import, Pyattr):
-            return (first(self))
+
+def eval_list(contents, env):
+    """
+    If what we have to evaluate is a list, then we need to take care of
+    that. First thing is the function, the rest are the args. Some things
+    have everything in their object ready to go.
+    """
+    if contents.empty():
+        return List()  # ()
+
+    first = contents.first()
+    rest = contents.rest()
+
+    if type(first) is List:
+        first = eval_list(first, env)
+
+    if type(first) is Atom:
+        first = first(env)
+
+    # plysp function
+    if type(first) is Function:
+        return first()
+
+    # or python function..
+    # If it is a python function, to call directly.
+    # isinstance(first, (types.FunctionType, types.BuiltinFunctionType)
+    if type(first) in (types.FunctionType, types.BuiltinFunctionType):
+        args = map((lambda obj: eval_scalar(obj, env)), rest)
+        return first(*args)
+
+    if type(first) in (Map, Keyword):
+        args = map((lambda obj: eval_scalar(obj, env)), rest)
+        return first(env, rest)
+
+    # I'm not clear on if this could even be hit.
+    # parser gobbles, objects come about.
+    if type(first) in (Def, Py_interop, Import, Pyattr):
+        return first(env)
+
+    return first(env, rest)
 
 
-    def eval_to_string(self,txt):
-        return(self.tostring(self.eval_scalar(txt)))
-        
+def eval_to_string(txt, env):
+    return tostring(eval_scalar(txt, env))
