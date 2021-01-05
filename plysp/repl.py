@@ -127,12 +127,11 @@ else:
     atexit.register(readline.write_history_file, histfile)
 
 
-def main():
-    comp = compiler()
+def repl(comp, prompt="\nPlysp - %s > "):
     comp.command_help()
     while True:
         try:
-            txt = input("plysp - %s > " % comp.current_ns())
+            txt = input(prompt % comp.current_ns())
             if re.search(r"^\s*$", txt):
                 continue
             else:
@@ -151,7 +150,7 @@ def main():
             #  later/soon, we should handle source files as well.
 
 
-if __name__ == "__main__":
-    exit_code = main()
-    if exit_code:
-        sys.exit(exit_code)
+# if __name__ == "__main__":
+#     exit_code = main()
+#     if exit_code:
+#         sys.exit(exit_code)

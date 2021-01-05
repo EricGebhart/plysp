@@ -9,7 +9,8 @@ from namespace import namespace, stackframe
 
 isa = isinstance
 
-logger = logs.add_file_handler(logging.getLogger(), "info", "plysp.log")
+# logger = logs.add_file_handler(logging.getLogger(), "info", "plysp.log")
+logger = logging.getLogger("plysp")
 
 
 class ComparableExpr(object):
@@ -529,11 +530,13 @@ def tostring(x):
         Set,
         Pyattr,
         PyNew,
+        Def,
+        If,
     ):
         return x.__str__()
     else:
         print(str(x), type(x))
-        raise TypeError("Sorry can't pretty print, %s is unknown!" % x)
+        # raise TypeError("Sorry can't pretty print, %s is unknown!" % x)
 
 
 def eval_scalar(x, env=None):
