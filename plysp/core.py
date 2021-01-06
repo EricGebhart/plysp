@@ -420,8 +420,8 @@ class Def(object):
         return self.symbol.name()
 
     def __call__(self, env):
-        # print(self.symbol.__str__(), self.rest)
-        env.set_symbol(self.symbol.__str__(), eval_scalar(self.rest))
+        logger.debug("%s %s " % (self.symbol.__str__(), self.rest))
+        env.set_symbol(self.symbol.__str__(), eval_scalar(self.rest, env))
         return self.symbol
 
 
