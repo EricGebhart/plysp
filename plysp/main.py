@@ -12,7 +12,7 @@ AS = {
     "args": {},
     "defaults": {
         "config_file": "plysp-defaults.yaml",
-        "loglevel": "info",
+        "loglevel": "debug",
         "logfile": "plysp.log",
         "prompt": "\nPlysp - %s > ",
     },
@@ -131,23 +131,24 @@ def init(defaults={}):
 
     logfile = get_in(AS, ["args", "logfile"])
     if logfile is None:
-        logfile = (get_in_config(["files", "logfile"]),)
+        logfile = get_in_config(["files", "logfile"])
     if logfile is None:
         logfile = get_in(AS, ["defaults", "logfile"])
 
     loglvl = get_in(AS, ["args", "loglevel"])
     if loglvl is None:
-        loglvl = (get_in_config(["files", "loglevel"]),)
+        loglvl = get_in_config(["files", "loglevel"])
     if loglvl is None:
         loglvl = get_in(AS, ["defaults", "loglevel"])
     if loglvl is None:
         loglvl = "info"
-    loglvl = "info"
 
     print(loglvl)
 
     logger = logs.add_file_handler(logger, loglvl, logfile)
-    # logger = logs.add_file_handler(logging.getLogger(), "info", "plysp.log")
+    # logger = logs.add_file_handler(logging.getLogger(), loglvl, "plysp.log")
+
+    logger.debug("Hello from the logger")
 
     comp = compiler()
     do_something(comp)
