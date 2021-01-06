@@ -1,9 +1,18 @@
 import importlib as il
 import types
+import logging
+from logs import logdebug as debug
 
 # for now.  These should really only be within the namespace
 from functools import reduce
 import operator as op
+
+logger = logging.getLogger("plysp")
+
+
+def logdebug(msg):
+    """partial of logdebug."""
+    ldebug(logger, msg)
 
 
 # I think this is my atom...
@@ -69,15 +78,16 @@ class stackframe(dict):
 
     # at least at the moment, paths are always at the name space level.
     def find_path(self, path):
-        # print("FIND Path")
+        logger.debug("FIND Path")
         ns = self.find_namespace()
-        # print("NS:", ns.items())
+        logger.debug("NS:", ns.items())
         return ns.find(path)
 
     def find(self, var):
         "Find the innermost Env where var appears."
 
         # has to be a namespace, so go look there.
+        debug(logger, "stackFrame: find: %s" % var)
         if len(var) > 1:
             return self.find_path(var)
 
@@ -85,7 +95,7 @@ class stackframe(dict):
             var = var[0]
 
         if var in self.keys():
-            # print("Find - found: ", var)
+            debug(logger, "Find - found: %s " % var)
             return self.__getitem__(var)
         elif self.outer is None:
             raise LookupError(var)
@@ -156,7 +166,8 @@ class namespace(stackframe):
         for name, info in variadic_operators.items():
             self[name] = variadic_generator(*info)
 
-        # Something to start with.
+        # Something to start with, I think a lot of this can be
+        # better done in core.yl when I get one.
         non_variadic_operators = {
             "!": op.inv,
             ">": op.gt,
@@ -171,10 +182,12 @@ class namespace(stackframe):
             "eq?": op.is_,
             "equal?": op.eq,
             "length": len,
+            # Needs to be List, so refactor collections out of core.
+            # Then we can reference them here.
             "list": lambda *x: list(x),
-            "list?": lambda x: isinstance(x, List),
-            "map?": lambda x: isinstance(x, Map),
-            "vector?": lambda x: isinstance(x, Vector),
+            "list?": lambda x: isinstance(x, list),
+            "map?": lambda x: isinstance(x, map),
+            # "vector?": lambda x: isinstance(x, Vector),
             "not": op.not_,
             "nil?": lambda x: x is None,
             "empty?": lambda x: x == [],
@@ -218,16 +231,8 @@ class namespace(stackframe):
             self.stack = self.stack[0:-1]
 
     def find(self, symbol):
-        if isinstance(symbol, list):
-            # print("find path NS", symbol)
-            sym = self.find_path_in_ns(symbol)
-        else:
-            # print("find from Stack", symbol)
-            if len(self.stack) > 0:
-                sym = self.stack[-1].find(symbol)
-            else:
-                sym = self.find(symbol)
-        return sym
+        debug(logger, "find path NS: %s" % symbol)
+        return self.find_path_in_ns(symbol)
 
     def __import_func__(self, name, func):
         return il.import_module(name).__getattribute__(func)

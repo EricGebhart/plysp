@@ -5,7 +5,7 @@ import sys
 
 from lexer import PlyspLex
 from parser import PlyspParse
-from core import Env, eval_to_string
+from core import Env, eval_to_string, tostring
 from namespace import namespace
 
 
@@ -34,7 +34,7 @@ class compiler(object):
 
         elif self.test_parser is True:
             pt = self.parser.parse(txt, lexer=self.lexer)
-            print(pt)
+            print("-------")
             return pt
 
         else:

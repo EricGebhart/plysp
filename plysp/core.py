@@ -77,7 +77,7 @@ class Atom(ComparableExpr):
 
     def __call__(self, env, rest=None):
         logger.debug("call Atom")
-        logger.debug(self.name, rest)
+        logger.debug(self.name)
 
         logger.debug(type(env))
 
@@ -442,7 +442,6 @@ class Env(object):
         self.eval_verbose = False
         self.core_ns = namespace("plysp/core")
         self.namespaces = {"plysp/core": self.core_ns}
-        self.outer = None
 
         if ns is None:
             ns = "User"
@@ -472,12 +471,10 @@ class Env(object):
         pass
 
     def find(self, symbol):
-        if self.eval_verbose is True:
-            logger.debug("EnV find", type(symbol), "in", self.current_ns.name)
+        logger.debug("EnV find %s in %s" % (type(symbol), self.current_ns.name))
         sym = self.current_ns.find(symbol)
         if sym is None:
-            if self.eval_verbose is True:
-                logger.debug("EnV find", type(symbol), "in", self.core_ns.name)
+            logger.debug("EnV find %s in %s" % (type(symbol), self.core_ns.name))
             sym = self.core_ns.find(symbol)
         return sym
 
