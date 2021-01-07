@@ -371,11 +371,12 @@ class Function(ComparableExpr):
     def __repr__(self):
         return "(fn %s %s)" % (self.parms, self.body)
 
-    def __call__(self):
+    def __call__(self, env):
+        self.env = env
         return self.__eval__
 
     def __eval__(self, env, args):
-        return eval_list(self.body, stackframe(self.parms, args, env))
+        return eval_list(self.body, stackframe(self.parms, args, self.env))
 
 
 class Let(ComparableExpr):
@@ -571,7 +572,7 @@ def eval_list(contents, env):
 
     # plysp function
     if type(first) is Function:
-        return first()
+        return first(env)
 
     # or python function..
     # If it is a python function, to call directly.

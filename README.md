@@ -71,16 +71,26 @@ and then all the special symbols which will allow for the creation of Macros.
 
 The problems are fewer and fewer, Sometimes I wonder if it is because of the
 parser that I have caused difficulties, but usually, it's just I haven't looked
-at it the right way yet.  This does _not_ work.
+at it the right way yet.  This also works.
 
-    (def gen (fn [x] (fn [y] (+ y x))))
-    (def incv (gen 5))
-    (incv 5)
+```clojure
+    Plysp - User > (def make-incr (fn [x] (fn [y] (+ y x))))
+    make-incr
+
+    Plysp - User > ((make-incr 5) 5)
+    10
+
+    Plysp - User > (def incv (make-incr 5))
+    incv
+
+    Plysp - User > (incv 4)
+    9
+
+    (def make-incr (fn [x] (fn [y] (+ y x))))
+    (def incv (make-incr 5))
+    (incv 4)
+```
     
-*x* goes unresolved at evaluation time. This shows a basic problem
-in how things are processed. The scope that holds the function
-must continue to live.
-
 ### symbol table - or not.
 
 Another oddity, is using the tokenizer to find the reader macro symbols. #/\'\"\` etc. Most lisps
