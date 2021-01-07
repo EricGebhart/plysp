@@ -356,23 +356,27 @@ class PlyspParse(object):
             args = p[3:]
         p[0] = PyNew(self.env, classname=classname, args=args)
 
-    def p_sexpr_pyattr(self, p):
-        """ sexpr : PYATTR """
-        attr = p[1][1:]
-        p[0] = Pyattr(attr)
+    # def p_sexpr_pyattr(self, p):
+    #     """ sexpr : PYATTR """
+    #     attr = p[1][1:]
+    #     p[0] = Pyattr(attr)
 
     def p_sexpr_dot_interop(self, p):
-        """sexpr : DOT ATOM ATOM
+        """sexpr : DOT ATOM
+        | DOT ATOM ATOM
         | DOT ATOM ATOM sexprs
         """
-        print(len(p))
+        # print(len(p))
         method = p[2]
-        obj = p[3]
-        if len(p) > 3:
-            args = p[4:]
+        if method[0] == "-":
+            p[0] = Pyattr(p[2][1:])
         else:
-            args = None
-        p[0] = Py_interop(method, obj, args)
+            obj = p[3]
+            if len(p) > 3:
+                args = p[4:]
+            else:
+                args = None
+            p[0] = Py_interop(method, obj, args)
 
     def p_error(self, p):
         if p:

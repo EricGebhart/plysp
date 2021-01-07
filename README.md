@@ -1,86 +1,85 @@
 # plysp
 
 I've been interested in having a lisp with access to the python system for
-a while. Everytime I code in Python I miss Lisp. I like python too, but
+a while. Every time I code in Python I miss Lisp. I like python too, but
 sometimes I just don't want to swap out my functional brain for the OO brain
-just to write something with a python library.
+just to write something with a python library.  I miss multi-arity, multi-functions,
+map, reduce, and easy list manipulation. cond and condp. Let. Nice deconstructors.
 
 I really like clojure, and that seems like a good fit in many ways, it has
 dictionaries, and sets and lists... But a clojure
 on top of python is really a different animal than one on top of java. Also, 
 Clojure is a beast at this point. It seems unreasonable to think that a 
-python version of clojure would survive and thrive.  
-It's been done before, and it's not happening.
+python version of clojure would survive and thrive.
 
 I've written other languages, and I like working with 
 [BNF](https://en.wikipedia.org/wiki/Backus–Naur_form) grammars, I'm still not
 sure that's a good fit for a lisp. But that's what I'm doing here. I played around with
 Lex and Yacc for a bit, considered doing it all in C, with a python interpreter embedded.
-Then I found Cython and [PLY](http://www.dabeaz.com/ply/), and I thought, why not try that.
+Then I found Cython and [PLY](http://www.dabeaz.com/ply/), why not try that.
 
-So here it is, so far.  
+So here it is, so far.
 
 ## Capabilities so far
 
-It is, at this point, just an interpreter.  Run it like this, you must have python 3.
+It is, at this point, just an interpreter.  Run the Repl like this, 
+you must have python 3.
 
-`python repl.py`
+`python plysp -r`
 
-The parser creates python objects.  Compiling is essentially pickling (when I get to it).  
+The parser creates python objects.  Compiling is essentially pickling (when I get to it).
 And runtime is asking the objects to execute.
 
-There are a set of commands in the repl that you can execute to change the behavior and to
-see what is going on in the lexer and parser.
+There are a set of commands in the repl that you can execute to change
+the behavior and to see what is going on in the lexer and parser. This
+should be going away soon, but there will be a better equivalent.
 
 -help at the repl prompt will give a list of the commands.
 
-There are namespaces, and a stack of stackframes.  There is no reall way to do a *let* yet
-so scoping is kind of limited.  Also there's no way to make a function yet. So
-really this is just a toy at this point.
+### Namespaces, Python interop, lambda, etc.
 
-Basic python interop and namespaces do work.  You can create an instance of somthing and then
-use it, and you can access python libraries like math. all the core functions of python
-are imported into the core namespcae automatically. 
+There are namespaces, scoping, lambda, define, python interop, immutable collections.
 
-`(import math as "m")`  Will let you do things like `(m/sin 2)` and `(-m/pi)`  --> 3.142527...
+Namespaces, python interop, it all works. You can create an instance
+of somthing and then use it, and you can access python libraries like
+math. all the core functions of python are imported into the core
+namespace automatically.
 
-The *-* is for attributes in the library. This is following clojure's syntax for accessing 
-class attributes in java.
+`(import math as "m")`  Will let you do things like `(m/sin 2)` and `(.-m/pi)`  --> 3.142527...
 
-Although that is not really needed.  Math is imported as `math` into the core namespace so
-`(math/sin 2)` works out of the box.  also the operators are there so `(+ 1 1 5)`  also works.
-You can define variables.  `(def x 10)`  Then use them.  `(+ x 3)`  or `(math/sin x)`
-More complex things work too.  `(+ x (math/sin x) 1000)` what ever you like.
+Although, the python builtins, math, cmath, operators, py-reduce, and py-partial are
+imported as part of the plysp core namespace.
 
-Named arguments have some work ahead. 
-Macros are on the way as are
-lambdas *fn* and the rest of the core symbols needed to write everything else.
+The *.-* is for attributes in the library. This is following clojure's dot syntax 
+for accessing class attributes in java.
 
-There are immutable lists, vectors, hashmaps, sets, etc.  There isn't too much to do with
-them yet because I haven't gotten to the point of surfacing their API's in the language.
-But that will be easy when the time comes.
+Math is imported as `math` into the core namespace so `(math/sin 2)`
+works out of the box.  The operators are there so `(+ 1 1 5)`
+also works. You can define variables.  `(def x 10)`  Then use them.
+`(+ x 3)`  or `(math/sin x)` More complex things work too.  `(+ x
+(math/sin x) 1000)` what ever you like.
 
+### Lambdas
 
-Testing is pretty much non-existant. There are a few things there.
+They work:  `((fn [x] (* x x)) 10)`  --> 100
+To make a named function: `(def sqr (fn [x] (* x x)))`
 
+### Still To go
 
-## drawing the line between core, and lang.
+There are some miscellaneous foundation bits to tie together 
+and then all the special symbols which will allow for the creation of Macros.
 
-The plan is to  move a bit more of the internals into python/C instead of doing it in the 
-language itself as is done in most lisps including clojure.  
-Where to draw the line between what the
-language implements itself and what is in the core is an interesting question.  My thought is
-that most of what a lisp does, is maintain scope, which is how we get deconstruction of parameters
-into a signature, so having as much of that as possible in C is going to be more performant. 
-It's still not very much code, and it makes things a little easier as the bootstrap layer to 
-the language is much thinner.
+The problems are fewer and fewer, Sometimes I wonder if it is because of the
+parser that I have caused difficulties, but usually, it's just I haven't looked
+at it the right way yet.  This does _not_ work.
 
-The plan is to move all of the classes which represent the core language into Cython classes.
-That should give good performance while still allowing the use of python libraries as we desire.
-
-Compiling is a matter of parsing the code into it's objects and then pickling the result. Reloading
-the pickled code would give an executable that would run in the runtime.  Of course this means
-breaking up the parser and the interpreter/repl. All doable.
+    (def gen (fn [x] (fn [y] (+ y x))))
+    (def incv (gen 5))
+    (incv 5)
+    
+*x* goes unresolved at evaluation time. This shows a basic problem
+in how things are processed. The scope that holds the function
+must continue to live.
 
 ### symbol table - or not.
 
@@ -95,10 +94,10 @@ better or worse.
 
 ### Clojure
 
-This isn't clojure. I've read a lot of source code for clojure and this isn't that.
+This isn't clojure. I am a clojure programmer, and this is not that.
 Going with a [BNF](https://en.wikipedia.org/wiki/Backus–Naur_form) 
 parser changes things from the start. But, I know clojure, and I have
-studied the syntax and behavior. So it's related.  
+studied source. So it's related, like all lisps.
 [Clojure is here](https://github.com/clojure/clojure)
 
 ### Clojure-py
@@ -122,26 +121,26 @@ from Clojure-py, but I don't know. I like the simplicity of using funktown so fa
 
 ### Hylang
 
-There is also [Hylang] (https://github.com/hylang/hy)  For me this language falls short. It is
-too intertwined and dependent upon how python works. It doesn't have scoping or a *Let*. That
+There is also [Hylang] (https://github.com/hylang/hy)  
+For me this language falls short. It is
+too intertwined and dependent upon how python works. 
+The last time I checked It still doesn't have scoping or a *Let*. That
 just isn't a lisp to me.  It looks like a lisp.  But it doesn't act like a lisp.
 
 
-### Peter Norvig's [Lis.py](http://www.norvig.com/lispy.html) and 
+### Peter Norvig's Lispys
+[Lis.py](http://www.norvig.com/lispy.html) and 
 [Lispy.py](https://norvig.com/lispy2.html)
 
-Peter Norvig wrote a couple of articles on building your own lisp
-(scheme) in python. They are popular articles, but I find the code pretty
-sloppy. The original versions can be found with some effort, but there are
-better versions out there.  Peter wrote 2 versions. lis.py and lispy.py.
-Lispy.py is the better, more capable version.
+Peter Norvig wrote a couple of essays on building your own lisp
+(scheme) in python. I recommend them for understanding compilers
+and interpreters. The code is not Black, but Black will mostly fix it.
 
-IMHO, The best adaptations, that I have found, of Peter's Lispys are these. 
+The best adaptations, that I have found, of Peter's Lispys are these. 
 [Adam Haney's Lispy with dialects] (https://github.com/adamhaney/lispy)
 and 
 [Norvigs Lisps for Py3k](https://github.com/Shambles-Dev/Norvig_Lisps_for_Py3k) 
-which is a cleaned up version of the originals. They are easier on the
-eyes for python 3.
+which is a cleaned up python 3 version of the originals. 
 
 [another more advanced lispy](https://github.com/ridwanmsharif/lispy)
 

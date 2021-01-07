@@ -59,7 +59,6 @@ class PlyspLex(object):
 
     tokens = [
         "ATOM",
-        "SLASH",
         "KEYWORD",
         "IF",
         "DEF",
@@ -69,7 +68,6 @@ class PlyspLex(object):
         "AS",
         "PATH",
         "NEW",
-        "PYATTR",
         "LSETBRACE",
         # 'LIGNOREFORM',
         "STRING",
@@ -256,10 +254,10 @@ class PlyspLex(object):
         r"new"
         return t
 
-    # -foo.bar.baz  -foo.bar -foo etc.
-    def t_PYATTR(self, t):
-        r"(\.\-(([-_A-Za-z0-9]+(\/[-_A-Za-z0-9]+)*)||([-[_A-Za-z0-9]+])))"
-        return t
+    # # -foo.bar.baz  -foo.bar -foo etc.
+    # def t_PYATTR(self, t):
+    #     r"(\.\-(([-_A-Za-z0-9]+(\/[-_A-Za-z0-9]+)*)||([-[_A-Za-z0-9]+])))"
+    #     return t
 
     # # foo.bar, foo.bar.baz
     # def t_PYPATH(self, t):
@@ -282,9 +280,9 @@ class PlyspLex(object):
         r"\#\{"
         return t
 
-    def t_SLASH(self, t):
-        r"\/"
-        return t
+    # def t_SLASH(self, t):
+    #     r"\/"
+    #     return t
 
     # def t_LIGNOREFORM(self, t):
     #     r'\#_\('
