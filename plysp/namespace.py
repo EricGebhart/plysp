@@ -78,16 +78,15 @@ class stackframe(dict):
 
     # at least at the moment, paths are always at the name space level.
     def find_path(self, path):
-        logger.debug("FIND Path")
         ns = self.find_namespace()
-        logger.debug("NS:", ns.items())
+        debug(logger, "NS:", ns.items())
         return ns.find(path)
 
     def find(self, var):
         "Find the innermost Env where var appears."
 
         # has to be a namespace, so go look there.
-        debug(logger, "stackFrame: find: %s" % var)
+        debug(logger, "local Scope: %s" % var)
         if len(var) > 1:
             return self.find_path(var)
 
@@ -95,7 +94,7 @@ class stackframe(dict):
             var = var[0]
 
         if var in self.keys():
-            debug(logger, "Find - found: %s " % var)
+            debug(logger, "Found: %s " % var)
             return self.__getitem__(var)
         elif self.outer is None:
             raise LookupError(var)
@@ -231,7 +230,7 @@ class namespace(stackframe):
             self.stack = self.stack[0:-1]
 
     def find(self, symbol):
-        debug(logger, "find path NS: %s" % symbol)
+        debug(logger, "Symbol: %s" % symbol)
         return self.find_path_in_ns(symbol)
 
     def __import_func__(self, name, func):

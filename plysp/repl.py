@@ -2,11 +2,15 @@
 
 import re
 import sys
+import traceback
+import logging
 
 from lexer import PlyspLex
 from parser import PlyspParse
 from core import Env, eval_to_string, tostring
 from namespace import namespace
+
+logger = logging.getLogger("plysp")
 
 
 class compiler(object):
@@ -146,7 +150,10 @@ def repl(comp, prompt="\nPlysp - %s > "):
             break
         except Exception as e:
             print(e)
-            #  return 1  <-- for now, we assume interactive session at REPL.
+            print(traceback.format_exc())
+            logger.info(e)
+            logger.info(traceback.format_exc())
+            #  return 1  <-- for now, we assume interactive session at REPL.)
             #  later/soon, we should handle source files as well.
 
 

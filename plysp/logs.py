@@ -1,5 +1,6 @@
 import logging
 import sys
+import inspect
 
 message_fmt = "[%(asctime)s] %(levelname)-8s %(name)-12s %(message)s"
 
@@ -71,15 +72,28 @@ def add_stdout_handler(logger, loglevel):
     return logger
 
 
+def get_class_from_frame(fr):
+    args, _, _, value_dict = inspect.getargvalues(fr)
+    # we check the first parameter for the frame function is
+    # named 'self'
+    if len(args) and args[0] == "self":
+        # in that case, 'self' will be referenced in value_dict
+        instance = value_dict.get("self", None)
+        if instance:
+            # return its class
+            return str(getattr(instance, "__class__", None)).split(" ")[-1][1:-2]
+    # return None otherwise
+    return None
+
+
 def logdebug(logger, message):
-    "Automatically log the current function details."
-    import inspect
+    "Add in function details for debug messages."
 
     # Get the previous frame in the stack, otherwise it would
     # be this function!!!
-    func = inspect.currentframe().f_back.f_code
-    # Dump the message + the name of this function to the log.
-    logger.debug(
-        "%s: %s in %s:%i"
-        % (message, func.co_name, func.co_filename, func.co_firstlineno)
-    )
+    frame = inspect.currentframe().f_back
+    func = frame.f_code
+    cname = get_class_from_frame(frame)
+    # filename = func.co_filename.split("/")[-1]
+    funcname = "[%s : %i]" % (func.co_name, func.co_firstlineno)
+    logger.debug("[ %-20s %-20s ] %s" % (cname, funcname, message))

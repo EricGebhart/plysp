@@ -69,9 +69,8 @@ To make a named function: `(def sqr (fn [x] (* x x)))`
 There are some miscellaneous foundation bits to tie together 
 and then all the special symbols which will allow for the creation of Macros.
 
-The problems are fewer and fewer, Sometimes I wonder if it is because of the
-parser that I have caused difficulties, but usually, it's just I haven't looked
-at it the right way yet.  This also works.
+Making generators works...
+
 
 ```clojure
     Plysp - User > (def make-incr (fn [x] (fn [y] (+ y x))))

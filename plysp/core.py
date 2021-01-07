@@ -11,6 +11,7 @@ isa = isinstance
 
 # logger = logs.add_file_handler(logging.getLogger(), "info", "plysp.log")
 logger = logging.getLogger("plysp")
+debug = logs.logdebug
 
 
 class ComparableExpr(object):
@@ -60,7 +61,7 @@ class Map(ComparableExpr, ImmutableDict):
 class Atom(ComparableExpr):
     def __init__(self, name=None, value=None):
         self.name = name.split("/")
-        logger.info("Atom: %s " % name)
+        debug(logger, "New Atom: %s " % name)
 
     def name(self):
         return self.name
@@ -76,15 +77,9 @@ class Atom(ComparableExpr):
         # return "ATOM(%s)" % (self.name)
 
     def __call__(self, env, rest=None):
-        logger.debug("call Atom")
-        logger.debug(self.name)
-
-        logger.debug(type(env))
-
         val = env.find(self.name)
 
-        logger.debug("----------")
-        logger.debug(type(val))
+        debug(logger, "- %s : Type ---- %s" % (self.name, type(val)))
 
         if not val:
             raise UnknownVariable("Function %s is unknown" % self.name)
@@ -421,7 +416,7 @@ class Def(object):
         return self.symbol.name()
 
     def __call__(self, env):
-        logger.debug("%s %s " % (self.symbol.__str__(), self.rest))
+        debug(logger, "%s %s " % (self.symbol.__str__(), self.rest))
         env.set_symbol(self.symbol.__str__(), eval_scalar(self.rest, env))
         return self.symbol
 
@@ -472,17 +467,15 @@ class Env(object):
         pass
 
     def find(self, symbol):
-        logger.debug("EnV find %s in %s" % (type(symbol), self.current_ns.name))
+        debug(logger, "%s in %s" % (type(symbol), self.current_ns.name))
         sym = self.current_ns.find(symbol)
         if sym is None:
-            logger.debug("EnV find %s in %s" % (type(symbol), self.core_ns.name))
+            debug(logger, "%s in %s" % (type(symbol), self.core_ns.name))
             sym = self.core_ns.find(symbol)
         return sym
 
     def set_symbol(self, symbol, val):
-        logger.debug("set symbol")
-        logger.debug(type(symbol))
-        logger.debug(val)
+        debug(logger, "Symbol %s is a %s, value: %s" % (symbol, type(symbol), val))
         return self.current_ns.set_symbol(symbol, val)
 
 
