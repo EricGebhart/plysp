@@ -1,10 +1,8 @@
-# import operator
+import traceback
 import types
 import logs
 import logging
 from funktown import ImmutableDict, ImmutableVector, ImmutableList
-
-# from functools import reduce
 from namespace import namespace, stackframe
 
 isa = isinstance
@@ -80,7 +78,7 @@ class Atom(ComparableExpr):
         val = env.find(self.name)
 
         debug(logger, "- %s : Type ---- %s" % (self.name, type(val)))
-
+        # debug(logger, str(traceback.print_stack(limit=4)))
         if not val:
             raise UnknownVariable("Function %s is unknown" % self.name)
 
@@ -367,11 +365,13 @@ class Function(ComparableExpr):
         return "(fn %s %s)" % (self.parms, self.body)
 
     def __call__(self, env):
-        self.env = env
-        return self.__eval__
+        self.env = env  # don't need to do this. just put it in the lambda.
 
-    def __eval__(self, env, args):
-        return eval_list(self.body, stackframe(self.parms, args, self.env))
+        def eval_function(*args):
+            debug(logger, "Args: %s" % str(args))
+            return eval_list(self.body, stackframe(self.parms, args, self.env))
+
+        return eval_function
 
 
 class Let(ComparableExpr):
@@ -557,6 +557,9 @@ def eval_list(contents, env):
     first = contents.first()
     rest = contents.rest()
 
+    debug(logger, "First isa: %s" % type(first))
+    debug(logger, "rest is: %s" % rest)
+
     if type(first) is List:
         first = eval_list(first, env)
 
@@ -564,6 +567,7 @@ def eval_list(contents, env):
         first = first(env)
 
     # plysp function
+    # We get a pointer to it.
     if type(first) is Function:
         return first(env)
 
@@ -572,6 +576,8 @@ def eval_list(contents, env):
     # isinstance(first, (types.FunctionType, types.BuiltinFunctionType)
     if type(first) in (types.FunctionType, types.BuiltinFunctionType):
         args = map((lambda obj: eval_scalar(obj, env)), rest)
+        debug(logger, "---------- Type Args: %s\n" % type(args))
+        debug(logger, "---------- rest: %s | Args: %s\n" % (rest, args))
         return first(*args)
 
     if type(first) in (Map, Keyword):
@@ -583,6 +589,7 @@ def eval_list(contents, env):
     if type(first) in (Def, If, Py_interop, Import, Pyattr):
         return first(env)
 
+    debug(logger, "Returning first env rest: %s" % rest)
     return first(env, rest)
 
 

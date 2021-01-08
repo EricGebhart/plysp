@@ -89,7 +89,30 @@ Making generators works...
     (def incv (make-incr 5))
     (incv 4)
 ```
-    
+
+Calling plysp functions from higher order python functions also
+works. Here's a silly example.
+
+```clojure
+   Plysp - User > (def incr (fn [i] (fn [x y] (+ x y i))))
+   incr
+
+   Plysp - User > ((incr 100) 4 5)
+   109
+
+   Plysp - User > (def x [1 2 3 4 5])
+   x
+
+   Plysp - User > (def foo (incr 100))
+   foo
+
+   Plysp - User > (py-reduce foo x)
+   415
+
+   Plysp - User > (py-reduce + x)
+   15
+```
+ 
 ### symbol table - or not.
 
 Another oddity, is using the tokenizer to find the reader macro symbols. #/\'\"\` etc. Most lisps
