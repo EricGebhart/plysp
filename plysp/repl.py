@@ -4,6 +4,7 @@ import re
 import sys
 import traceback
 import logging
+from logs import logdebug
 
 from lexer import PlyspLex
 from parser import PlyspParse
@@ -11,6 +12,7 @@ from core import Env, eval_to_string, tostring
 from namespace import namespace
 
 logger = logging.getLogger("plysp")
+debug = logdebug
 
 
 class compiler(object):
@@ -142,6 +144,7 @@ def repl(comp, prompt="\nPlysp - %s > "):
                 if txt[0 : len(comp.command_prefix)] == comp.command_prefix:
                     comp.commands(txt)
                 else:
+                    debug(logger, txt)
                     print(comp.parseit(txt))
         except EOFError:
             break

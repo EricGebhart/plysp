@@ -2,6 +2,7 @@ import traceback
 import types
 import logs
 import logging
+import regex as re
 from funktown import ImmutableDict, ImmutableVector, ImmutableList
 from namespace import namespace, stackframe
 
@@ -58,7 +59,10 @@ class Map(ComparableExpr, ImmutableDict):
 
 class Atom(ComparableExpr):
     def __init__(self, name=None, value=None):
-        self.name = name.split("/")
+        if re.match(r"/", name) and len(name) > 1:
+            self.name = name.split("/")
+        else:
+            self.name = [name]
         debug(logger, "New Atom: %s " % name)
 
     def name(self):
