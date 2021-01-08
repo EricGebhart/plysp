@@ -104,7 +104,9 @@ def compile_file(comp, filename):
     """Open, read, and compile/evaluate a file."""
     with open(filename, "r") as reader:
         for line in reader:
-            print(comp.parseit(line))
+            if line != "\n":
+                logs.logdebug(logger, "*** %s" % line)
+                print(comp.parseit(line))
 
 
 def init(defaults={}):
