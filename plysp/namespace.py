@@ -10,11 +10,6 @@ import operator as op
 logger = logging.getLogger("plysp")
 
 
-def logdebug(msg):
-    """partial of logdebug."""
-    ldebug(logger, msg)
-
-
 # I think this is my atom...
 class Symbol(str):
     pass
@@ -29,6 +24,7 @@ class stackframe(dict):
         # print("stackframe")
         # print(parms, type(parms))
         # print(args)
+        debug(logger, "New stackframe, outer type: %s" % self.outer)
         if isinstance(parms, Symbol):
             self.update({parms: list(args)})
 
@@ -88,7 +84,7 @@ class stackframe(dict):
         # has to be a namespace, so go look there.
         debug(logger, "local Scope: %s" % var)
         if len(var) > 1:
-            return self.find_path(var)
+            return self.outer.find(var)
 
         elif len(var) == 1:
             var = var[0]

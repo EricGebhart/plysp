@@ -60,13 +60,13 @@ class Map(ComparableExpr, ImmutableDict):
 class Atom(ComparableExpr):
     def __init__(self, name=None, value=None):
         # Nothing but /'s, a path, or a word.
-        if re.match(r"^[/]+$", name):
+        if re.match(r"^/+$", name):
             self.name = [name]
-        elif re.match(r"/", name):
+        elif re.findall(r"/", name):
             self.name = name.split("/")
         else:
             self.name = [name]
-        debug(logger, "New Atom: %s " % name)
+        debug(logger, "New Atom: %s " % self.name)
 
     def name(self):
         return self.name
