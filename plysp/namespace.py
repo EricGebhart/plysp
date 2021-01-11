@@ -72,7 +72,6 @@ class stackframe(dict):
 
         return thing
 
-    # at least at the moment, paths are always at the name space level.
     def find_path(self, path):
         ns = self.find_namespace()
         debug(logger, "NS:", ns.items())
@@ -99,6 +98,62 @@ class stackframe(dict):
             return self.outer.find(var)
 
 
+def some_builtins():
+    # These functions take a variable number of arguments
+    ops = {}
+
+    variadic_operators = {
+        "+": (op.add, 0),
+        "-": (op.sub, 0),
+        "*": (op.mul, 1),
+        "/": (op.truediv, 1),
+        "==": (op.eq, 0),
+        "=": (op.eq, 0),
+        "max": (max, 0),
+        "min": (min, 0),
+    }
+
+    def variadic_generator(func, default):
+        ret = lambda *args: reduce(func, args) if args else default
+        # For string representation; otherwise just get 'lambda':
+        ret.__name__ = func.__name__
+        return ret
+
+    for name, info in variadic_operators.items():
+        ops[name] = variadic_generator(*info)
+
+    # Something to start with, I think a lot of this can be
+    # better done in core.yl when I get one.
+    non_variadic_operators = {
+        "!": op.inv,
+        ">": op.gt,
+        "<": op.lt,
+        ">=": op.ge,
+        "<=": op.le,
+        "abs": abs,
+        "first": lambda x: x[0],
+        "last": lambda x: x[-1],
+        "rest": lambda x: x[1:],
+        "cons": lambda x, y: [x] + y,
+        "eq?": op.is_,
+        "equal?": op.eq,
+        "length": len,
+        # Needs to be List, so refactor collections out of core.
+        # Then we can reference them here.
+        "list": lambda *x: list(x),
+        "list?": lambda x: isinstance(x, list),
+        "map?": lambda x: isinstance(x, map),
+        # "vector?": lambda x: isinstance(x, Vector),
+        "not": op.not_,
+        "nil?": lambda x: x is None,
+        "empty?": lambda x: x == [],
+        "number?": lambda x: isinstance(x, Number),
+        "round": round,
+        "symbol?": lambda x: isinstance(x, Symbol),
+    }
+    return ops | non_variadic_operators
+
+
 class namespace(stackframe):
     def __init__(self, name):
         stackframe.__init__(self)
@@ -106,16 +161,6 @@ class namespace(stackframe):
             name = "User"
 
         self.outer = None
-
-        self.stack = []
-
-        # we can reconstitute.
-        self.imports = []
-        self.requires = []
-
-        # At some point we need to try to load a file by that name
-        # to create a working namespace.
-        # We need a load function first...
 
         self.name = name
         # should be able to do this with py_import() below
@@ -126,7 +171,8 @@ class namespace(stackframe):
             if callable(obj)
         ]
 
-        self.some_builtins()
+        # Get some builtins built in.
+        self.update((name, func) for name, func in some_builtins().items())
 
         if name == "plysp/core":
             self.py_import("math")
@@ -139,91 +185,11 @@ class namespace(stackframe):
         # go into the namespace until there is a scope.
         # leaving for now because there isn't a plysp.core yet.
 
-    def some_builtins(self):
-        # These functions take a variable number of arguments
-        variadic_operators = {
-            "+": (op.add, 0),
-            "-": (op.sub, 0),
-            "*": (op.mul, 1),
-            "/": (op.truediv, 1),
-            "==": (op.eq, 0),
-            "=": (op.eq, 0),
-            "max": (max, 0),
-            "min": (min, 0),
-        }
-
-        def variadic_generator(func, default):
-            ret = lambda *args: reduce(func, args) if args else default
-            # For string representation; otherwise just get 'lambda':
-            ret.__name__ = func.__name__
-            return ret
-
-        for name, info in variadic_operators.items():
-            self[name] = variadic_generator(*info)
-
-        # Something to start with, I think a lot of this can be
-        # better done in core.yl when I get one.
-        non_variadic_operators = {
-            "!": op.inv,
-            ">": op.gt,
-            "<": op.lt,
-            ">=": op.ge,
-            "<=": op.le,
-            "abs": abs,
-            "first": lambda x: x[0],
-            "last": lambda x: x[-1],
-            "rest": lambda x: x[1:],
-            "cons": lambda x, y: [x] + y,
-            "eq?": op.is_,
-            "equal?": op.eq,
-            "length": len,
-            # Needs to be List, so refactor collections out of core.
-            # Then we can reference them here.
-            "list": lambda *x: list(x),
-            "list?": lambda x: isinstance(x, list),
-            "map?": lambda x: isinstance(x, map),
-            # "vector?": lambda x: isinstance(x, Vector),
-            "not": op.not_,
-            "nil?": lambda x: x is None,
-            "empty?": lambda x: x == [],
-            "number?": lambda x: isinstance(x, Number),
-            "round": round,
-            "symbol?": lambda x: isinstance(x, Symbol),
-        }
-
-        self.update((name, func) for name, func in non_variadic_operators.items())
-
     def __str__(self):
         return "<Namespace: %s>" % self.name
 
-    def add_import(self, import_obj):
-        self.imports.append(import_obj)
-
-    def add_require(self, require_obj):
-        self.imports.append(require_obj)
-
     def set_symbol(self, name, val):
-        # if we have a frame on the stack it goes there.
-        # otherwise it goes in the name space.
-        # at the moment there is always a frame on the stack.
-
-        if len(self.stack) > 0:
-            self.stack[-1].__setitem__(name, val)
-        else:
-            self.__setitem__(name, val)
-
-    def push_stack(self):
-        if len(self.stack) > 0:
-            outer = self.stack[-1]
-        else:
-            outer = self
-
-        self.stack.append(stackframe(outer=outer))
-        return self.stack[-1]
-
-    def pop_stack(self):
-        if len(self.stack) > 0:
-            self.stack = self.stack[0:-1]
+        return self.__setitem__(name, val)
 
     def find(self, symbol):
         debug(logger, "Symbol: %s" % symbol)
@@ -312,9 +278,6 @@ class namespace(stackframe):
             for k in thing_keys
             if self.is_module(self.__getitem__(k)) is True
         ]
-
-    def show_stackframe(self):
-        return [thing for thing in self.stack]
 
 
 # importlib.__import__(name, globals=None, locals=None, fromlist=(), level=0)

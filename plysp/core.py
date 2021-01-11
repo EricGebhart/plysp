@@ -4,6 +4,8 @@ import logs
 import logging
 import regex as re
 from funktown import ImmutableDict, ImmutableVector, ImmutableList
+
+# from pyrsistent import m, pmap, v, pvector, s
 from namespace import namespace, stackframe
 
 isa = isinstance
@@ -445,6 +447,7 @@ class Env(object):
         self.eval_verbose = False
         self.core_ns = namespace("plysp/core")
         self.namespaces = {"plysp/core": self.core_ns}
+        self.outer = None
 
         if ns is None:
             ns = "User"
