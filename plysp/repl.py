@@ -9,7 +9,7 @@ from logs import logdebug
 from lexer import PlyspLex
 from parser import PlyspParse
 from core import Env, eval_to_string, tostring
-from namespace import namespace
+from namespace import Env
 
 logger = logging.getLogger("plysp")
 debug = logdebug
@@ -18,15 +18,17 @@ debug = logdebug
 class compiler(object):
     def __init__(self):
 
-        self.env = Env()  # Parent Env to all envs and namespaces.
+        self.env = Env(name="/")  # Parent Env to all envs and namespaces.
         self.lexer = PlyspLex().build()
         self.parser = PlyspParse(self.env).build()
         self.test_lexer = False
         self.test_parser = False
         self.command_prefix = "-"
 
+        # self.compile_file("plysp/plysp/core.yl")
+
     def current_ns(self):
-        return self.env.current_ns.name
+        return self.env.current_ns
 
     def lexit(self, txt):
         self.lexer.input(txt)
@@ -45,7 +47,15 @@ class compiler(object):
 
         else:
             pt = self.parser.parse(txt, lexer=self.lexer)
-            return eval_to_string(pt, self.env)
+            return eval_to_string(pt, self.env.current_ns)
+
+    def compile_file(self, filename):
+        """Open, read, and compile/evaluate a file."""
+        with open(filename, "r") as reader:
+            for line in reader:
+                if line != "\n":
+                    logdebug(logger, "*** %s" % line)
+                    return self.parseit(line)
 
     def command_help(self):
         print("Command prefix is %s" % self.command_prefix)
@@ -80,9 +90,6 @@ class compiler(object):
         elif txt == "parse":
             self.toggle_parser()
 
-        elif txt == "namespaces":
-            print(self.env.namespaces)
-
         elif txt == "eval verbose" or txt == "verbose":
             self.env.eval_verbose = True
 
@@ -104,8 +111,6 @@ class compiler(object):
             print("python callables")
             print(self.env.namespaces[txt].show_python_callables())
 
-        elif txt == "stack":
-            print(self.env.current_ns.show_stackframe())
         else:
             print("command %s not known" % txt)
 

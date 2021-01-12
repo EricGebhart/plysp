@@ -6,7 +6,7 @@ import regex as re
 from funktown import ImmutableDict, ImmutableVector, ImmutableList
 
 # from pyrsistent import m, pmap, v, pvector, s
-from namespace import namespace, stackframe
+from namespace import Env
 
 isa = isinstance
 
@@ -285,7 +285,6 @@ class Import(object):
             name = self.name
 
         env.current_ns.py_import(name, self.asname)
-        env.current_ns.add_import(self)
 
     def __repr__(self):
         if self.asname is not None:
@@ -362,10 +361,10 @@ class Py_interop(object):
 
 
 class Function(ComparableExpr):
-    def __init__(self, parms, body, stackframe):
+    def __init__(self, parms, body, env):
         self.parms = parms
         self.body = body
-        self.stackframe = stackframe
+        self.env = env
 
     def __str__(self):
         return self.__repr__()
@@ -378,7 +377,7 @@ class Function(ComparableExpr):
 
         def eval_function(*args):
             debug(logger, "Args: %s" % str(args))
-            return eval_list(self.body, stackframe(self.parms, args, self.env))
+            return eval_list(self.body, Env(self.parms, args, self.env))
 
         return eval_function
 
@@ -392,11 +391,11 @@ class UnknownVariable(Exception):
 
 
 class If(object):
-    def __init__(self, test, true_expr, false_expr, stackframe):
+    def __init__(self, test, true_expr, false_expr, env):
         self.test = test
         self.true_expr = true_expr
         self.false_expr = false_expr
-        self.stackframe = stackframe
+        self.env = env
 
     def __str__(self):
         return "(if %s %s %s)" % (self.test, self.true_expr, self.false_expr)
@@ -410,15 +409,15 @@ class If(object):
 
 
 class Def(object):
-    def __init__(self, arg1, arg2, stackframe):
+    def __init__(self, arg1, arg2, env):
         self.symbol = arg1
         self.rest = arg2
-        self.stackframe = stackframe
+        self.env = env
         # this should be unnecessary because the grammar will take care of it.
-        if type(self.symbol) is not Atom:
-            raise TypeError("First argument to def must be atom")
-        stackframe.set_symbol(self.symbol, self.rest)
-        # self.__call__(stackframe)
+        # if type(self.symbol) is not Atom:
+        #     raise TypeError("First argument to def must be atom")
+        # env.set_symbol(self.symbol, self.rest)
+        # self.__call__(env)
         # return (self.symbol)
 
     def __str__(self):
@@ -430,63 +429,35 @@ class Def(object):
         return self.symbol
 
 
-class Env(object):
-    """
-    This is our programming Environment, which has namespaces. It has
-    the core namespace, and will create a "User" namespace if there is none.
-    We can create and navigate our namespaces, and find symbols.
-    Our scoping environments, (stackframe), chain from this Environment.
-    """
-
-    def __init__(self, ns=None):
-
-        # for now it just has python callables
-        # once there is a plysp.core.yl then we
-        # need to start loading it, so we have more.
-
-        self.eval_verbose = False
-        self.core_ns = namespace("plysp/core")
-        self.namespaces = {"plysp/core": self.core_ns}
-        self.outer = None
-
-        if ns is None:
-            ns = "User"
-
-        self.current_ns = namespace(ns)
-        self.namespaces[ns] = self.current_ns
-
-    def in_ns(self, name):
-        if type(name) is not str:
-            name = name.name  # it's an Atom
-        if name in self.namespaces.keys():
-            self.current_ns = self.namespaces[name]
-            return self.current_ns
+class NewNS(object):
+    def __init__(self, name):
+        debug(logger, type(name))
+        # Nothing but /'s, a path, or a word.
+        if re.match(r"^/+$", name):
+            self.name = [name]
+        elif re.findall(r"/", name):
+            self.name = name.split("/")
         else:
-            return None
+            self.name = [name]
 
-    def new_ns(self, name):
-        if type(name) is not str:
-            name = name.name  # it's an Atom
-        if name not in self.namespaces.keys():
-            self.current_ns = namespace(name)
-            self.namespaces[name] = self.current_ns
-        return self.current_ns
+    def __str__(self):
+        return self.name()
 
-    def load_ns(self, name):
-        """read a file and load it into it's ns"""
-        pass
+    def __call__(self, env, rest):
+        debug(logger, self.name.__str__())
+        return env.new_ns(self.name)
 
-    def find(self, symbol):
-        debug(logger, "%s in %s" % (type(symbol), self.current_ns.name))
-        sym = self.current_ns.find(symbol)
-        if sym is None:
-            debug(logger, "%s in %s" % (type(symbol), self.core_ns.name))
-            sym = self.core_ns.find(symbol)
-        return sym
 
-    def set_symbol(self, symbol, val):
-        debug(logger, "Symbol %s is a %s, value: %s" % (symbol, type(symbol), val))
-        return self.current_ns.set_symbol(symbol, val)
+class In_NS(object):
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return self.name()
+
+    def __call__(self, env, rest):
+        debug(logger, self.name.__str__())
+        return env.find(self.name)
 
 
 def to_string(x):
@@ -525,7 +496,7 @@ def tostring(x):
         Keyword,
         list,
         List,
-        namespace,
+        Env,
         Vector,
         Map,
         Set,
@@ -549,7 +520,7 @@ def eval_scalar(x, env=None):
         return x(env)
     elif type(x) is List:
         return eval_list(x.contents, env)
-    # Needs to create a new scope. stackframe.
+    # Needs to create a new scope. env.
     elif type(x) in (Function, types.FunctionType):
         return x(env)
     return x
@@ -561,6 +532,7 @@ def eval_list(contents, env):
     that. First thing is the function, the rest are the args. Some things
     have everything in their object ready to go.
     """
+    # while True:
     if contents.empty():
         return List()  # ()
 
@@ -581,6 +553,10 @@ def eval_list(contents, env):
     if type(first) is Function:
         return first(env)
 
+    # New name space or old, change there.
+    if type(first) in (NewNS, In_NS):
+        env = first(env, rest)
+
     # or python function..
     # If it is a python function, to call directly.
     # isinstance(first, (types.FunctionType, types.BuiltinFunctionType)
@@ -599,8 +575,8 @@ def eval_list(contents, env):
     if type(first) in (Def, If, Py_interop, Import, Pyattr):
         return first(env)
 
-    debug(logger, "Returning first env rest: %s" % rest)
-    return first(env, rest)
+    # debug(logger, "Returning first env rest: %s" % rest)
+    # return first(env, rest)
 
 
 def eval_to_string(txt, env):

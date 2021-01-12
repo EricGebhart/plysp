@@ -93,20 +93,11 @@ def do_something(compiler):
     if len(files):
         for f in files:
             logger.info("Loading: %s" % f)
-            compile_file(compiler, f)
+            compiler.compile_file(compiler, f)
 
     # Run the repl.
     if AS["args"]["repl"]:
         repl(compiler, prompt=get_in(AS, ["args", "prompt"]))
-
-
-def compile_file(comp, filename):
-    """Open, read, and compile/evaluate a file."""
-    with open(filename, "r") as reader:
-        for line in reader:
-            if line != "\n":
-                logs.logdebug(logger, "*** %s" % line)
-                print(comp.parseit(line))
 
 
 def init(defaults={}):

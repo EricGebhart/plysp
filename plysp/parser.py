@@ -12,6 +12,8 @@ from core import (
     Set,
     Def,
     If,
+    NewNS,
+    In_NS,
     Import,
     PyNew,
     Pyattr,
@@ -306,15 +308,17 @@ class PlyspParse(object):
         "sexpr : ANONYMOUS_ARG"
         p[0] = Anonymous_Arg(p[1:])
 
+    # These can't do this. They should be objects in
+    # core that can be called.
+    # It short circuits future compileability.
     def p_sexpr_ns(self, p):
-        """sexpr : NS ATOM
-        | NS PATH"""
-        p[0] = self.env.new_ns(p[2])
+        """sexpr : NS ATOM"""
+        p[0] = NewNS(p[2])
 
     def p_sexpr_in_ns(self, p):
         """sexpr : IN_NS ATOM
         | IN_NS PATH"""
-        p[0] = self.env.in_ns(p[2])
+        p[0] = In_NS(p[2])
 
     # Not right. Funcpath should just be a path. and resolve to a func.
     # This is just a hack so that math/sin and so forth work.
@@ -339,7 +343,7 @@ class PlyspParse(object):
             p[0] = Import(name)
 
         elif len(p) == 5:
-            asname = p[5]
+            asname = p[4]
             p[0] = Import(name, asname)
 
     def p_sexpr_pynew(self, p):
