@@ -51,11 +51,13 @@ class compiler(object):
 
     def compile_file(self, filename):
         """Open, read, and compile/evaluate a file."""
+        i = 0
         with open(filename, "r") as reader:
             for line in reader:
                 if line != "\n":
-                    logdebug(logger, "*** %s" % line)
-                    return self.parseit(line)
+                    debug(logger, "*** [%d] %s" % (i, line))
+                    self.parseit(line)
+                    i = i + 1
 
     def command_help(self):
         print("Command prefix is %s" % self.command_prefix)

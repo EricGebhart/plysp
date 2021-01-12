@@ -93,7 +93,7 @@ def do_something(compiler):
     if len(files):
         for f in files:
             logger.info("Loading: %s" % f)
-            compiler.compile_file(compiler, f)
+            compiler.compile_file(f)
 
     # Run the repl.
     if AS["args"]["repl"]:

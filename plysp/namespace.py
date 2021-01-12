@@ -49,7 +49,7 @@ class Env(dict):
                 self.update(list(zip(parms, args)))
 
     def __core_it__(self):
-        """Here to remember..."""
+        """Install the python builtins+."""
         # should be able to do this with py_import() below
         # from builtins import *
         [
@@ -84,8 +84,8 @@ class Env(dict):
         debug(logger, (" %s " % str(path_var)))
         ns = self.current_ns or self
         debug(logger, "Self, %s" % self.name)
-        debug(logger, "Items, %s" % self.items())
-        debug(logger, "NS: %s" % str(ns.items()))
+        # debug(logger, "Items, %s" % self.items())
+        # debug(logger, "NS: %s" % str(ns.items()))
         debug(logger, "FIND Path IN: %s" % self.name)
 
         thing = None
@@ -108,6 +108,9 @@ class Env(dict):
 
             elif isinstance(thing, Env):
                 thing = thing.find_path(rest)
+
+        else:
+            thing = self.outer.find_path(path_var)
 
         return thing
 
@@ -245,7 +248,7 @@ class Env(dict):
         in the current namespace."""
         ns = self.find(["*current-ns*"])
 
-        debug(logger, "me has: %s" % (self.items()))
+        # debug(logger, "me has: %s" % (self.items()))
         debug(logger, "me: %s %s" % (self.name, type(self)))
         debug(logger, "name: %s %s" % (name, type(name)))
         debug(logger, "ns: %s" % self.current_ns)
