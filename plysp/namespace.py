@@ -28,6 +28,7 @@ class Env(dict):
         self.outer = outer
         self.name = name
         self.eval_verbose = False
+
         if name is not None:
             debug(logger, "-- NewENV: %s" % name)
             self.__setitem__("*ns*", self.__str__())
@@ -72,20 +73,23 @@ class Env(dict):
         # go into the namespace until there is a scope.
         # leaving for now because there isn't a plysp.core yet.
 
-    def find_top(self):
+    def find_root(self):
         "Find the Env at the top of the envs."
-        env = self.outer
-        while env.outer is not None:
-            env = env.outer
-        return env
+        if self.outer:
+            env = self.outer
+            while env.outer is not None:
+                env = env.outer
+            return env
+        else:
+            return self
 
     def find_path(self, path_var):
         # ns = self.find("*current-ns*")
-        debug(logger, (" %s " % str(path_var)))
-        ns = self.current_ns or self
+        debug(logger, ("search: %s " % str(path_var)))
+        ns = self.current_ns if self.current_ns is not None else self
         debug(logger, "Self, %s" % self.name)
-        # debug(logger, "Items, %s" % self.items())
-        # debug(logger, "NS: %s" % str(ns.items()))
+        # debug(logger, "getItem, %s" % self.__getitem__("plysp"))
+        debug(logger, "NS: %s" % str(ns.keys()))
         debug(logger, "FIND Path IN: %s" % self.name)
 
         thing = None
@@ -110,7 +114,8 @@ class Env(dict):
                 thing = thing.find_path(rest)
 
         else:
-            thing = self.outer.find_path(path_var)
+            if self.outer:
+                thing = self.outer.find_path(path_var)
 
         return thing
 
@@ -136,6 +141,21 @@ class Env(dict):
     #     else:
     #         return self.outer.find(var)
 
+    def refer(self, namespace, exclude=[], only=[], rename={}):
+        """Provide references to things in other namespaces."""
+        debug(logger, "namespace: %s " % namespace)
+        root = self.find_root()
+        debug(logger, "root: %s " % root)
+        ns = root.find_path(namespace)
+        for symbol, val in ns.items():
+            if symbol in exclude:
+                continue
+            if only:
+                if symbol in only:
+                    self.set_symbol(rename.get(symbol, symbol), val)
+            else:
+                self.set_symbol(rename.get(symbol, symbol), val)
+
     def __str__(self):
         return "/".join(self.name)
 
@@ -146,7 +166,7 @@ class Env(dict):
         """Once we have a plysp core, set it so its easy to get to"""
         core = self.find(["plysp", "core"])
         if isinstance(core, Env):
-            top = self.find_top()
+            top = self.find_root()
             top.set_symbol("*core-ns*", core)
         Env.core_ns = core
 
@@ -246,7 +266,7 @@ class Env(dict):
     def new_ns(self, name):
         """Take a atom/list of names, create a new namespace environment
         in the current namespace."""
-        ns = self.find(["*current-ns*"])
+        ns = self.current_ns
 
         # debug(logger, "me has: %s" % (self.items()))
         debug(logger, "me: %s %s" % (self.name, type(self)))
@@ -260,6 +280,9 @@ class Env(dict):
             else:
                 debug(logger, "Using Env: %s" % ns[n])
                 ns = ns[n]
+
+            debug(logger, "Set NS: %s ns %s" % (n, ns))
+            self.set_symbol(n, ns)
 
         Env.current_ns = ns
         return ns

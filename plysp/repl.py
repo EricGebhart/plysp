@@ -24,8 +24,11 @@ class compiler(object):
         self.test_lexer = False
         self.test_parser = False
         self.command_prefix = "-"
+        self.basepath = None
 
         self.compile_file("plysp/plysp/core.yl")
+
+        self.env.refer(["plysp", "core"])
 
     def current_ns(self):
         return self.env.current_ns
@@ -49,8 +52,15 @@ class compiler(object):
             pt = self.parser.parse(txt, lexer=self.lexer)
             return eval_to_string(pt, self.env.current_ns)
 
+    def load_lib(self, namepath):
+        path = os.path.join(self.basepath, namepath)
+        self.compile_file(path)
+
     def compile_file(self, filename):
         """Open, read, and compile/evaluate a file."""
+        if self.basepath is None:
+            self.basepath = os.path.split(filename)
+
         i = 1
         with open(filename, "r") as reader:
             for line in reader:
