@@ -4,6 +4,7 @@ import ply.yacc as yacc
 from lexer import PlyspLex
 from core import (
     Atom,
+    # NMsym,
     Keyword,
     List,
     Vector,
@@ -135,6 +136,10 @@ class PlyspParse(object):
     def p_sexpr_atom(self, p):
         "sexpr : ATOM"
         p[0] = Atom(p[1])
+
+    # def p_sexpr_nm_sym(self, p):
+    #     """sexpr : NM_SYM"""
+    #     p[0] = NMsym(p[1])
 
     def p_keyword(self, p):
         "sexpr : KEYWORD"
@@ -335,22 +340,31 @@ class PlyspParse(object):
         """
         sexpr : IMPORT ATOM
               | IMPORT ATOM AS ATOM
-              | IMPORT PATH
-              | IMPORT PATH AS ATOM
+              | IMPORT ATOM DOT ATOM
+              | IMPORT ATOM DOT ATOM AS ATOM
+              | IMPORT ATOM DOT ATOM DOT ATOM AS ATOM
         """
         name = p[2]
-        if len(p) == 3:
-            p[0] = Import(name)
-
-        elif len(p) == 5:
-            asname = p[4]
+        asname = None
+        hasas = None
+        token = None
+        if len(p) > 3:
+            for token in p[3:]:
+                if hasas is True:
+                    asname = token
+                elif token == "as":
+                    hasas = True
+                else:
+                    name = "".join([name, token])
+        if asname:
             p[0] = Import(name, asname)
+        else:
+            p[0] = Import(name)
 
     def p_sexpr_pynew(self, p):
         """
-        sexpr : NEW PATH sexpr
+        sexpr : NEW ATOM sexpr sexpr
               | NEW ATOM sexpr
-              | NEW PATH
               | NEW ATOM
         """
         print("py New:", p[2])
@@ -367,7 +381,7 @@ class PlyspParse(object):
 
     def p_sexpr_dot_interop(self, p):
         """sexpr : DOT ATOM
-        | DOT ATOM ATOM
+        | DOT ATOM sexprs
         | DOT ATOM ATOM sexprs
         """
         # print(len(p))

@@ -94,6 +94,39 @@ class Atom(ComparableExpr):
         return val
 
 
+class NMsym(ComparableExpr):
+    def __init__(self, name=None, value=None):
+        # A path using dots, or a word.
+        if re.findall(r"\.", name):
+            self.name = name.split(".")
+        else:
+            self.name = [name]
+        debug(logger, "New NM Sym: %s " % self.name)
+
+    def name(self):
+        return self.name
+
+    def __str__(self):
+        return ".".join(self.name)
+
+    def pypath(self):
+        return ".".join(self.name)
+
+    def __repr__(self):
+        return "/".join(self.name)
+        # return "NMSYM(%s)" % (self.name)
+
+    def __call__(self, env, rest=None):
+        val = env.find(self.name)
+
+        debug(logger, "- %s : Type ---- %s" % (self.name, type(val)))
+        # debug(logger, str(traceback.print_stack(limit=4)))
+        if not val:
+            raise UnknownVariable("Name: %s is unknown" % self.name)
+
+        return val
+
+
 class Octal(object):
     pass
 
@@ -279,7 +312,7 @@ class Import(object):
         self.asname = asname
 
     def __call__(self, env):
-        if type(self.name) == Atom:
+        if type(self.name) in (Atom, NMsym):
             name = self.name.name
         else:
             name = self.name
@@ -468,6 +501,8 @@ def to_string(x):
         return "#f"
     elif isa(x, Atom):
         return x
+    elif isa(x, NMsym):
+        return x
     elif isa(x, str):
         return '"%s"' % x.encode("unicode_escape").decode("utf_8").replace('"', r"\"")
     elif isa(x, list):
@@ -493,6 +528,7 @@ def tostring(x):
 
     elif type(x) in (
         Atom,
+        NMsym,
         Keyword,
         list,
         List,
@@ -516,7 +552,7 @@ def eval_scalar(x, env=None):
         return
     if type(x) in (int, float, str, Keyword):
         return x
-    elif type(x) in (Atom, Import, Vector, Map, List, Set, Pyattr):
+    elif type(x) in (Atom, NMsym, Import, Vector, Map, List, Set, Pyattr):
         return x(env)
     elif type(x) is List:
         return eval_list(x.contents, env)
@@ -545,7 +581,7 @@ def eval_list(contents, env):
     if type(first) is List:
         first = eval_list(first, env)
 
-    if type(first) is Atom:
+    if type(first) in (Atom, NMsym):
         first = first(env)
 
     # plysp function

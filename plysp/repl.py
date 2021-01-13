@@ -25,7 +25,7 @@ class compiler(object):
         self.test_parser = False
         self.command_prefix = "-"
 
-        # self.compile_file("plysp/plysp/core.yl")
+        self.compile_file("plysp/plysp/core.yl")
 
     def current_ns(self):
         return self.env.current_ns
@@ -51,19 +51,17 @@ class compiler(object):
 
     def compile_file(self, filename):
         """Open, read, and compile/evaluate a file."""
-        i = 0
+        i = 1
         with open(filename, "r") as reader:
             for line in reader:
                 if line != "\n":
                     debug(logger, "*** [%d] %s" % (i, line))
-                    self.parseit(line)
+                    print(self.parseit(line))
                     i = i + 1
 
     def command_help(self):
         print("Command prefix is %s" % self.command_prefix)
-        print(
-            "Available commands are: help, lex, parse, verbose, quiet, namespaces, showns, show ns, stack."
-        )
+        print("Available commands are: help, lex, parse, verbose, quiet")
 
     def toggle_lexer(self):
         if self.test_lexer is False:

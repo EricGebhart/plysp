@@ -59,6 +59,7 @@ class PlyspLex(object):
 
     tokens = [
         "ATOM",
+        "NM_SYM",
         "KEYWORD",
         "IF",
         "DEF",
@@ -214,10 +215,6 @@ class PlyspLex(object):
         r"as"
         return t
 
-    def t_DOT(self, t):
-        r"\."
-        return t
-
     def t_DEF(self, t):
         r"def"
         return t
@@ -269,9 +266,18 @@ class PlyspLex(object):
     #     r'([-_A-Za-z0-9]+)\.'
     #     return t
 
+    # def t_NM_SYM(self, t):
+    #     r"[-\?\=\.+\*\+\!_a-zA-Z0-9<>]+"
+    #     t.type = self.reserved.get(t.value, "NM_SYM")
+    #     return t
+
     def t_ATOM(self, t):
         r"[-\?\=\/\*\+\!_a-zA-Z0-9<>]+"
         t.type = self.reserved.get(t.value, "ATOM")
+        return t
+
+    def t_DOT(self, t):
+        r"\."
         return t
 
     # because tokens are added after the functions and
