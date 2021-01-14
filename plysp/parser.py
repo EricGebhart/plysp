@@ -16,6 +16,8 @@ from core import (
     NewNS,
     In_NS,
     Import,
+    Refer,
+    Require,
     PyNew,
     Pyattr,
     Py_interop,
@@ -335,6 +337,28 @@ class PlyspParse(object):
             p[0] = FuncPath(p[1], p[2:])
         else:
             p[0] = Path(p[1])
+
+    def p_sexpr_refer(self, p):
+        """
+        sexpr : REFER ATOM
+              | REFER ATOM AS ATOM
+        """
+        name = p[2]
+        asname = None
+        hasas = None
+        token = None
+        if len(p) > 3:
+            for token in p[3:]:
+                if hasas is True:
+                    asname = token
+                elif token == "as":
+                    hasas = True
+                else:
+                    name = "".join([name, token])
+        if asname:
+            p[0] = Import(name, asname)
+        else:
+            p[0] = Import(name)
 
     def p_sexpr_import(self, p):
         """

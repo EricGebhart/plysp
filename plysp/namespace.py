@@ -20,12 +20,13 @@ class Env(dict):
     core_ns = None
     current_ns = None
 
-    def __init__(self, parms=(), args=(), outer=None, name=None):
+    def __init__(self, parms=(), args=(), outer=None, name=None, compiler=None):
         # Bind parm list to corresponding args, or single parm to list of args
 
         # Need to bind very first outer with the plysp/core env when
         # it loads. ? when's that?
         self.outer = outer
+        self.compiler = compiler
         self.name = name
         self.eval_verbose = False
 
@@ -35,7 +36,7 @@ class Env(dict):
             self.__setitem__("*current-ns*", self)
 
             if outer is None and self.current_ns is None:
-                self.__core_it__()  # until core.yl is there.
+                self.__builtins__()  # until core.yl is there.
                 Env.current_ns = self
 
         if isinstance(parms, Symbol):  # just case.
@@ -49,7 +50,7 @@ class Env(dict):
                 parms = [p.name[0] for p in parms]
                 self.update(list(zip(parms, args)))
 
-    def __core_it__(self):
+    def __builtins__(self):
         """Install the python builtins+."""
         # should be able to do this with py_import() below
         # from builtins import *
@@ -156,6 +157,26 @@ class Env(dict):
             else:
                 self.set_symbol(rename.get(symbol, symbol), val)
 
+    def require(self, namespace, exclude=[], only=[], rename={}):
+        """
+        Check if lib is loaded,
+        load it to root,
+        then refer the requested symbols to the current namespace.
+        """
+        current_ns = self.current_ns
+        debug(logger, "namespace: %s " % namespace)
+        root = self.find_root()
+        self.in_ns(root)
+
+        debug(logger, "root: %s " % root)
+        ns = root.find_path(namespace)
+
+        if ns is None:
+            root.compiler.load_lib(namespace)
+
+        self.in_ns(current_ns)
+        self.refer(namespace, exclude, only, rename)
+
     def __str__(self):
         return "/".join(self.name)
 
@@ -255,10 +276,10 @@ class Env(dict):
         ]
 
     def in_ns(self, name):
-        if type(name) is not str:
-            name = name.name  # it's an Atom
-        if name in self.namespaces.keys():
-            Env.current_ns = self.namespaces[name]
+        root = self.find_root()
+        thing = root.find_path(name)
+        if type(thing) is Env:
+            Env.current_ns = thing
             return Env.current_ns
         else:
             return None

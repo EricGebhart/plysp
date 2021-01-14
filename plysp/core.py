@@ -446,12 +446,6 @@ class Def(object):
         self.symbol = arg1
         self.rest = arg2
         self.env = env
-        # this should be unnecessary because the grammar will take care of it.
-        # if type(self.symbol) is not Atom:
-        #     raise TypeError("First argument to def must be atom")
-        # env.set_symbol(self.symbol, self.rest)
-        # self.__call__(env)
-        # return (self.symbol)
 
     def __str__(self):
         return self.symbol.name()
@@ -460,6 +454,40 @@ class Def(object):
         debug(logger, "%s %s " % (self.symbol.__str__(), self.rest))
         env.set_symbol(self.symbol.__str__(), eval_scalar(self.rest, env))
         return self.symbol
+
+
+class Refer(object):
+    """Provide references to things in other namespaces."""
+
+    def __init__(self, namespace, exclude=[], only=[], rename={}):
+        self.namespace = namespace.split(".")
+        self.exclude = exclude
+        self.only = only
+        self.rename = rename
+
+    def __str__(self):
+        return self.symbol.name()
+
+    def __call__(self, env):
+        debug(logger, "require namespace: %s " % namespace)
+        return env.require(self.namespace, self.exclude, self.only, self.rename)
+
+
+class Require(object):
+    """load libraries and provide references to things in other namespaces."""
+
+    def __init__(self, namespace, exclude=[], only=[], rename={}):
+        self.namespace = namespace.split(".")
+        self.exclude = exclude
+        self.only = only
+        self.rename = rename
+
+    def __str__(self):
+        return self.symbol.name()
+
+    def __call__(self, env):
+        debug(logger, "require namespace: %s " % namespace)
+        return env.require(self.namespace, self.exclude, self.only, self.rename)
 
 
 class NewNS(object):

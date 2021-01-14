@@ -66,6 +66,8 @@ class PlyspLex(object):
         "NS",
         "IN_NS",
         "IMPORT",
+        "REFER",
+        "REQUIRE",
         "AS",
         "PATH",
         "NEW",
@@ -209,6 +211,14 @@ class PlyspLex(object):
 
     def t_IMPORT(self, t):
         r"import"
+        return t
+
+    def t_REFER(self, t):
+        r"refer"
+        return t
+
+    def t_REQUIRE(self, t):
+        r"require"
         return t
 
     def t_AS(self, t):

@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
 import re
-import sys
 import traceback
 import logging
 from logs import logdebug
 
 from lexer import PlyspLex
 from parser import PlyspParse
-from core import Env, eval_to_string, tostring
+from core import eval_to_string
 from namespace import Env
 
 logger = logging.getLogger("plysp")
@@ -18,7 +17,9 @@ debug = logdebug
 class compiler(object):
     def __init__(self):
 
-        self.env = Env(name="/")  # Parent Env to all envs and namespaces.
+        self.env = Env(
+            compiler=self, name="/"
+        )  # Parent Env to all envs and namespaces.
         self.lexer = PlyspLex().build()
         self.parser = PlyspParse(self.env).build()
         self.test_lexer = False
@@ -28,6 +29,7 @@ class compiler(object):
 
         self.compile_file("plysp/plysp/core.yl")
 
+        # just to check... works...
         self.env.refer(["plysp", "core"])
 
     def current_ns(self):
@@ -53,7 +55,7 @@ class compiler(object):
             return eval_to_string(pt, self.env.current_ns)
 
     def load_lib(self, namepath):
-        path = os.path.join(self.basepath, namepath)
+        path = os.path.join(self.basepath, namepath) + ".yl"
         self.compile_file(path)
 
     def compile_file(self, filename):
