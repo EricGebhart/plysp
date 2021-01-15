@@ -2,6 +2,7 @@ import importlib as il
 import types
 import logging
 from logs import logdebug as debug
+from imcoll import ImList
 
 # for now.  These should really only be within the namespace
 from functools import reduce
@@ -76,11 +77,13 @@ class Env(dict):
                         )
                     rest = args[amp:]
                     newparms = [p.name[0] for p in parms[:amp]]
+                    debug(logger, "NewParms: %s" % newparms)
                     self.update(list(zip(newparms, args[:amp])))
                     restparm = parms.__getitem__(parms.__len__() - 1).__str__()
-                    self.set_symbol(restparm, List(rest))
+                    self.set_symbol(restparm, ImList(rest))
 
-                    debug(logger, "NewArgs: %s" % str(args))
+                    debug(logger, "restparm: %s" % restparm)
+                    debug(logger, "NewArgs: %s" % str(args[:amp]))
                     debug(logger, "env: %s" % self.items())
                     debug(logger, "keys: %s" % self.keys())
                     debug(logger, "Rest: %s" % str(self.__getitem__("r")))
@@ -89,8 +92,9 @@ class Env(dict):
                 elif len(args) != len(parms):
                     raise TypeError("expected %s, given %s, " % (str(parms), str(args)))
 
-                parms = [p.__str__() for p in parms]
-                self.update(list(zip(parms, args)))
+                else:
+                    parms = [p.__str__() for p in parms]
+                    self.update(list(zip(parms, args)))
 
     def __builtins__(self):
         """Install the python builtins+."""

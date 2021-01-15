@@ -91,6 +91,9 @@ class Atom(ComparableExpr):
         val = env.find(self.name)
 
         debug(logger, "-Env %s : keys ---- %s" % (env.name, env.keys()))
+        foo = env.find(["&"])
+        debug(logger, "- Find &: %s - %s" % (foo, type(foo)))
+
         debug(logger, "- %s : Type ---- %s" % (self.name, type(val)))
         # debug(logger, str(traceback.print_stack(limit=4)))
         if not val:
@@ -269,7 +272,7 @@ class Vector(ComparableIter, ImVector):
         if index is not None:
             return self.get(index)
         else:
-            return Vector(*[eval_scalar(el, env) for el in self])
+            return self  # Vector(*[eval_scalar(el, env) for el in self])
 
 
 class Keyword(ComparableExpr):
@@ -585,7 +588,18 @@ def eval_scalar(x, env=None):
         return
     if type(x) in (int, float, str, Keyword):
         return x
-    elif type(x) in (Atom, Import, Vector, Map, List, Set, Pyattr):
+    elif type(x) in (
+        Atom,
+        Import,
+        Vector,
+        ImVector,
+        Map,
+        ImMap,
+        List,
+        ImList,
+        Set,
+        Pyattr,
+    ):
         return x(env)
     elif type(x) is List:
         return eval_list(x.contents, env)

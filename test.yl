@@ -82,3 +82,14 @@ x
 (py-reduce / x)
 (py-reduce * x)
 (py-reduce - x)
+
+(def bar (fn [x y & r] r))
+(bar 1 2 4 8 9)
+(def bar (fn [x y & r] (- x y (py-reduce + r))
+
+(def y {:foo "bar"})
+(type y)
+(type 1)
+(def x 1)
+(type x)
+*ns*
