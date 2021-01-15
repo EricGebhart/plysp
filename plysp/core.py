@@ -3,9 +3,8 @@ import types
 import logs
 import logging
 import regex as re
-from funktown import ImmutableDict, ImmutableVector, ImmutableList
+from imcoll import ImMap, ImVector, ImList
 
-# from pyrsistent import m, pmap, v, pvector, s
 from namespace import Env
 
 isa = isinstance
@@ -26,18 +25,18 @@ class ComparableExpr(object):
         return hash(repr(self))
 
 
-class Map(ComparableExpr, ImmutableDict):
+class Map(ComparableExpr, ImMap):
     def __init__(self, *args, **kwargs):
         if not kwargs:
             if len(args) == 1:
-                ImmutableDict.__init__(self, args[0])
+                ImMap.__init__(self, args[0])
             else:
-                ImmutableDict.__init__(self)
+                ImMap.__init__(self)
         else:
-            ImmutableDict.__init__(self, kwargs)
+            ImMap.__init__(self, kwargs)
 
     def __eq__(self, other):
-        return ImmutableDict.__eq__(self, other)
+        return ImMap.__eq__(self, other)
 
     def __str__(self):
         inner = ", ".join(["%s %s" % (k, v) for k, v in self.items()])
@@ -234,9 +233,9 @@ class ComparableIter(ComparableExpr):
             return True
 
 
-class List(ComparableIter, ImmutableList):
+class List(ComparableIter, ImList):
     def __init__(self, *args):
-        ImmutableList.__init__(self, args)
+        ImList.__init__(self, args)
 
     def __str__(self):
         inner = " ".join([str(x) for x in self])
@@ -255,9 +254,9 @@ class List(ComparableIter, ImmutableList):
             return self.get(index)
 
 
-class Vector(ComparableIter, ImmutableVector):
+class Vector(ComparableIter, ImVector):
     def __init__(self, *args):
-        ImmutableVector.__init__(self, args)
+        ImVector.__init__(self, args)
 
     def __str__(self):
         inner = " ".join([str(x) for x in self])
