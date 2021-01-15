@@ -177,7 +177,7 @@ class PlyspParse(object):
 
     def p_sexpr_char(self, p):
         "sexpr : CHAR"
-        p[0] = Char(p[1])
+        p[0] = str(p[1])
 
     def p_sexpr_unicode_char(self, p):
         "sexpr : UNICODE_CHAR"

@@ -67,7 +67,6 @@ class PlyspLex(object):
         "IN_NS",
         "IMPORT",
         "REFER",
-        "REQUIRE",
         "AS",
         "PATH",
         "NEW",
@@ -75,6 +74,7 @@ class PlyspLex(object):
         # 'LIGNOREFORM',
         "STRING",
         "DOT",
+        "AMPR",
         "FLOAT",
         "INTEGER",
         "NUMBER",
@@ -101,6 +101,10 @@ class PlyspLex(object):
         "INLINE_FN",
         "ANONYMOUS_ARG",
         "LET",
+        "DO",
+        "TRY",
+        "CATCH",
+        "FINALLY",
         "OCTAL",
         "HEX",
         "BASE2",
@@ -217,10 +221,6 @@ class PlyspLex(object):
         r"refer"
         return t
 
-    def t_REQUIRE(self, t):
-        r"require"
-        return t
-
     def t_AS(self, t):
         r"as"
         return t
@@ -239,6 +239,18 @@ class PlyspLex(object):
 
     def t_DO(self, t):
         r"do"
+        return t
+
+    def t_TRY(self, t):
+        r"try"
+        return t
+
+    def t_CATCH(self, t):
+        r"catch"
+        return t
+
+    def t_FINALLY(self, t):
+        r"finally"
         return t
 
     def t_LETFN(self, t):
@@ -282,7 +294,7 @@ class PlyspLex(object):
     #     return t
 
     def t_ATOM(self, t):
-        r"[-\?\=\/\*\+\!_a-zA-Z0-9<>]+"
+        r"[-\?\=\&\/\*\+\!_a-zA-Z0-9<>]+"
         t.type = self.reserved.get(t.value, "ATOM")
         return t
 

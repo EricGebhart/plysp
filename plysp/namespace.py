@@ -19,6 +19,7 @@ class Env(dict):
     "An environment: a dict of {'var':val} pairs, with an outer Env."
     core_ns = None
     current_ns = None
+    root = None
 
     def __init__(self, parms=(), args=(), outer=None, name=None, compiler=None):
         # Bind parm list to corresponding args, or single parm to list of args
@@ -32,22 +33,63 @@ class Env(dict):
 
         if name is not None:
             debug(logger, "-- NewENV: %s" % name)
+
+            if name == "/":
+                Env.root = self
+                Env.current_ns = self
+                self.__builtins__()
+
             self.__setitem__("*ns*", self.__str__())
             self.__setitem__("*current-ns*", self)
 
-            if outer is None and self.current_ns is None:
-                self.__builtins__()  # until core.yl is there.
-                Env.current_ns = self
+            # Switch to this new namespace env.
+            Env.current_ns = self
 
         if isinstance(parms, Symbol):  # just case.
             self.update({parms: list(args)})
 
         else:
             if args and parms:  # Needs & for rest...research...
-                if len(args) != len(parms):
-                    raise TypeError("expected %s, given %s, " % (parms, args))
-                # All we get for parms are simple atoms.
-                parms = [p.name[0] for p in parms]
+                debug(logger, "Args: %s" % str(args))
+                debug(logger, "Parms: %s" % str(parms))
+
+                amp = None
+                for i in range(len(parms)):
+                    debug(logger, "parms: %s" % parms[i])
+                    debug(logger, "parms: %s" % parms[i])
+                    p = parms[i]
+                    debug(logger, "parms: %s" % type(p))
+
+                    if p.__str__() == "&":
+                        debug(logger, "p __str: %s" % p.__str__())
+                        amp = i
+                        break
+
+                if amp is not None:
+                    debug(logger, "Amp: %d" % amp)
+
+                    pcount = len(parms)
+                    debug(logger, "Amp %d, lenargs %d" % (amp, len(args)))
+                    if len(args) < pcount - 1:
+                        raise TypeError(
+                            "expected %s, given %s, " % (str(parms), str(args))
+                        )
+                    rest = args[amp:]
+                    newparms = [p.name[0] for p in parms[:amp]]
+                    self.update(list(zip(newparms, args[:amp])))
+                    restparm = parms.__getitem__(parms.__len__() - 1).__str__()
+                    self.set_symbol(restparm, List(rest))
+
+                    debug(logger, "NewArgs: %s" % str(args))
+                    debug(logger, "env: %s" % self.items())
+                    debug(logger, "keys: %s" % self.keys())
+                    debug(logger, "Rest: %s" % str(self.__getitem__("r")))
+                    debug(logger, "Type Rest: %s" % type(self.__getitem__("r")))
+
+                elif len(args) != len(parms):
+                    raise TypeError("expected %s, given %s, " % (str(parms), str(args)))
+
+                parms = [p.__str__() for p in parms]
                 self.update(list(zip(parms, args)))
 
     def __builtins__(self):
@@ -90,7 +132,7 @@ class Env(dict):
         ns = self.current_ns if self.current_ns is not None else self
         debug(logger, "Self, %s" % self.name)
         # debug(logger, "getItem, %s" % self.__getitem__("plysp"))
-        debug(logger, "NS: %s" % str(ns.keys()))
+        # debug(logger, "NS: %s" % str(ns.keys()))
         debug(logger, "FIND Path IN: %s" % self.name)
 
         thing = None
@@ -99,6 +141,7 @@ class Env(dict):
             thing = self.__getitem__(path_var[0])
             rest = path_var[1:]
             debug(logger, "Rest: %s" % rest)
+            debug(logger, "Type Thing: %s" % type(thing))
 
             if not rest:
                 return thing
@@ -116,6 +159,7 @@ class Env(dict):
 
         else:
             if self.outer:
+                debug(logger, "looking outside: %s" % path_var)
                 thing = self.outer.find_path(path_var)
 
         return thing
@@ -159,6 +203,7 @@ class Env(dict):
 
     def require(self, namespace, exclude=[], only=[], rename={}):
         """
+        I don't think this is needed. it can be coded in plysp later.
         Check if lib is loaded,
         load it to root,
         then refer the requested symbols to the current namespace.
@@ -348,7 +393,7 @@ def some_builtins():
         "abs": abs,
         "first": lambda x: x[0],
         "last": lambda x: x[-1],
-        "rest": lambda x: x[1:],
+        # "rest": lambda x: x[1:],
         "cons": lambda x, y: [x] + y,
         "eq?": op.is_,
         "equal?": op.eq,

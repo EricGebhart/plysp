@@ -51,7 +51,12 @@ class Map(ComparableExpr, ImmutableDict):
             return self.get(key)
         else:
             return Map(
-                dict([(eval_scalar(k), eval_scalar(v)) for k, v in self.items()])
+                dict(
+                    [
+                        (eval_scalar(k, env), eval_scalar(v, env))
+                        for k, v in self.items()
+                    ]
+                )
             )
 
         # if not rest.rest().empty():
@@ -86,6 +91,7 @@ class Atom(ComparableExpr):
     def __call__(self, env, rest=None):
         val = env.find(self.name)
 
+        debug(logger, "-Env %s : keys ---- %s" % (env.name, env.keys()))
         debug(logger, "- %s : Type ---- %s" % (self.name, type(val)))
         # debug(logger, str(traceback.print_stack(limit=4)))
         if not val:
@@ -264,7 +270,7 @@ class Vector(ComparableIter, ImmutableVector):
         if index is not None:
             return self.get(index)
         else:
-            return Vector(*[eval_scalar(el) for el in self])
+            return Vector(*[eval_scalar(el, env) for el in self])
 
 
 class Keyword(ComparableExpr):
@@ -580,7 +586,7 @@ def eval_scalar(x, env=None):
         return
     if type(x) in (int, float, str, Keyword):
         return x
-    elif type(x) in (Atom, NMsym, Import, Vector, Map, List, Set, Pyattr):
+    elif type(x) in (Atom, Import, Vector, Map, List, Set, Pyattr):
         return x(env)
     elif type(x) is List:
         return eval_list(x.contents, env)
@@ -597,6 +603,12 @@ def eval_list(contents, env):
     have everything in their object ready to go.
     """
     # while True:
+
+    debug(logger, "contents isa: %s" % type(contents))
+    if type(contents) is Atom:
+        debug(logger, "Atom: %s" % contents.name)
+        return contents(env)
+
     if contents.empty():
         return List()  # ()
 
