@@ -90,12 +90,8 @@ class Atom(ComparableExpr):
     def __call__(self, env, rest=None):
         val = env.find(self.name)
 
-        debug(logger, "-Env %s : keys ---- %s" % (env.name, env.keys()))
-        foo = env.find(["&"])
-        debug(logger, "- Find &: %s - %s" % (foo, type(foo)))
-
+        debug(logger, "- Env %s : keys ---- %s" % (env.name, env.keys()))
         debug(logger, "- %s : Type ---- %s" % (self.name, type(val)))
-        # debug(logger, str(traceback.print_stack(limit=4)))
         if not val:
             raise UnknownVariable("Function %s is unknown" % self.name)
 

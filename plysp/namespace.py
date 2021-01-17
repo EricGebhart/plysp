@@ -132,30 +132,23 @@ class Env(dict):
 
     def find_path(self, path_var):
         # ns = self.find("*current-ns*")
-        debug(logger, ("search: %s " % str(path_var)))
+        debug(logger, ("search: %s %s " % (self.name, str(path_var))))
         ns = self.current_ns if self.current_ns is not None else self
-        debug(logger, "Self, %s" % self.name)
-        # debug(logger, "getItem, %s" % self.__getitem__("plysp"))
         # debug(logger, "NS: %s" % str(ns.keys()))
-        debug(logger, "FIND Path IN: %s" % self.name)
 
         thing = None
         if path_var[0] in self:
-            debug(logger, "path_var[0]: %s" % path_var[0])
+            # debug(logger, "path_var[0]: %s" % path_var[0])
             thing = self.__getitem__(path_var[0])
             rest = path_var[1:]
-            debug(logger, "Rest: %s" % rest)
-            debug(logger, "Type Thing: %s" % type(thing))
+            # debug(logger, "Rest: %s" % rest)
+            debug(logger, "found Thing: %s" % type(thing))
 
             if not rest:
                 return thing
 
             # if type(thing) is types.ModuleType:
-            # potential BUG here.
             if isinstance(thing, types.ModuleType):
-                # print("found module thing")
-                # print("rest is; ", rest[0])
-                # print("returning : ", rest[0])
                 thing = thing.__getattribute__(rest[0])
 
             elif isinstance(thing, Env):
@@ -163,7 +156,7 @@ class Env(dict):
 
         else:
             if self.outer:
-                debug(logger, "looking outside: %s" % path_var)
+                # debug(logger, "looking outside: %s" % path_var)
                 thing = self.outer.find_path(path_var)
 
         return thing
