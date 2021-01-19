@@ -92,6 +92,8 @@ class Atom(ComparableExpr):
 
         debug(logger, "- Env %s : keys ---- %s" % (env.name, env.keys()))
         debug(logger, "- %s : Type ---- %s" % (self.name, type(val)))
+        if val is callable:
+            debug(logger, "- %s " % val(1))
         if not val:
             raise UnknownVariable("Function %s is unknown" % self.name)
 
@@ -642,10 +644,11 @@ def eval_list(contents, env):
     if type(first) in (NewNS, In_NS):
         env = first(env, rest)
 
+    debug(logger, "First isa: %s" % type(first))
     # or python function..
     # If it is a python function, to call directly.
     # isinstance(first, (types.FunctionType, types.BuiltinFunctionType)
-    if type(first) in (types.FunctionType, types.BuiltinFunctionType):
+    if type(first) in (types.FunctionType, types.BuiltinFunctionType, type):
         args = map((lambda obj: eval_scalar(obj, env)), rest)
         debug(logger, "---------- Type Args: %s\n" % type(args))
         debug(logger, "---------- rest: %s | Args: %s\n" % (rest, args))
