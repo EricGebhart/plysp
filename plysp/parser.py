@@ -12,6 +12,7 @@ from core import (
     # Ignore,
     Set,
     Def,
+    Do,
     If,
     NewNS,
     In_NS,
@@ -294,6 +295,13 @@ class PlyspParse(object):
     def p_sexpr_def(self, p):
         "sexpr : DEF sexpr sexpr"
         p[0] = Def(p[2], p[3], self.env)
+
+    def p_sexpr_do(self, p):
+        "sexpr : DO sexprs"
+        try:
+            p[0] = Do(*p[2])
+        except TypeError:
+            p[0] = Do(List(p[2]))
 
     def p_sexpr_if(self, p):
         "sexpr : IF sexpr sexpr sexpr"

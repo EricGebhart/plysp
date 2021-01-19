@@ -5,6 +5,7 @@ from funktown import ImmutableDict, ImmutableVector, ImmutableList
 ImMap = ImmutableDict
 ImVector = ImmutableVector
 ImList = ImmutableList
+ImSet = frozenset
 
 # ImMap = pmap
 # ImVector = pvector

@@ -3,7 +3,7 @@ import types
 import logs
 import logging
 import regex as re
-from imcoll import ImMap, ImVector, ImList
+from imcoll import ImMap, ImVector, ImList, ImSet
 
 from namespace import Env
 
@@ -100,37 +100,28 @@ class Atom(ComparableExpr):
         return val
 
 
-class NMsym(ComparableExpr):
-    def __init__(self, name=None, value=None):
+class Do(ComparableExpr):
+    """Evaluate a list of expressions returning the value of the last"""
+
+    def __init__(self, *exprs):
         # A path using dots, or a word.
-        if re.findall(r"\.", name):
-            self.name = name.split(".")
-        else:
-            self.name = [name]
-        debug(logger, "New NM Sym: %s " % self.name)
+        self.exprs = exprs
 
     def name(self):
-        return self.name
+        return None
 
     def __str__(self):
-        return ".".join(self.name)
-
-    def pypath(self):
-        return ".".join(self.name)
+        return "."
 
     def __repr__(self):
-        return "/".join(self.name)
-        # return "NMSYM(%s)" % (self.name)
+        return "."
 
     def __call__(self, env, rest=None):
-        val = env.find(self.name)
+        res = None
+        for x in self.exprs:
+            res = eval_list(x, env)
 
-        debug(logger, "- %s : Type ---- %s" % (self.name, type(val)))
-        # debug(logger, str(traceback.print_stack(limit=4)))
-        if not val:
-            raise UnknownVariable("Name: %s is unknown" % self.name)
-
-        return val
+        return res
 
 
 class Octal(object):
@@ -302,7 +293,7 @@ class Keyword(ComparableExpr):
         return eval_scalar(rest.first()).get(self.key)
 
 
-class Set(frozenset):
+class Set(ImSet):
     def __str__(self):
         inner = " ".join([self.tostring(x) for x in self])
         return "#{%s}" % inner
@@ -318,7 +309,7 @@ class Import(object):
         self.asname = asname
 
     def __call__(self, env):
-        if type(self.name) in (Atom, NMsym):
+        if type(self.name) is Atom:
             name = self.name.name
         else:
             name = self.name
@@ -535,8 +526,6 @@ def to_string(x):
         return "#f"
     elif isa(x, Atom):
         return x
-    elif isa(x, NMsym):
-        return x
     elif isa(x, str):
         return '"%s"' % x.encode("unicode_escape").decode("utf_8").replace('"', r"\"")
     elif isa(x, list):
@@ -562,7 +551,6 @@ def tostring(x):
 
     elif type(x) in (
         Atom,
-        NMsym,
         Keyword,
         list,
         List,
@@ -632,7 +620,7 @@ def eval_list(contents, env):
     if type(first) is List:
         first = eval_list(first, env)
 
-    if type(first) in (Atom, NMsym):
+    if type(first) is Atom:
         first = first(env)
 
     # plysp function
@@ -644,7 +632,6 @@ def eval_list(contents, env):
     if type(first) in (NewNS, In_NS):
         env = first(env, rest)
 
-    debug(logger, "First isa: %s" % type(first))
     # or python function..
     # If it is a python function, to call directly.
     # isinstance(first, (types.FunctionType, types.BuiltinFunctionType)
@@ -658,9 +645,7 @@ def eval_list(contents, env):
         args = map((lambda obj: eval_scalar(obj, env)), rest)
         return first(env, rest)
 
-    # I'm not clear on if this could even be hit.
-    # parser gobbles, objects come about.
-    if type(first) in (Def, If, Py_interop, Import, Pyattr):
+    if type(first) in (Def, If, Py_interop, Import, Pyattr, Do):
         return first(env)
 
     # debug(logger, "Returning first env rest: %s" % rest)
