@@ -64,12 +64,19 @@ class compiler(object):
             self.basepath = os.path.split(filename)
 
         i = 1
+        txt = ""
         with open(filename, "r") as reader:
             for line in reader:
                 if line != "\n":
+                    txt += line
                     debug(logger, "*** [%d] %s" % (i, line))
-                    print(self.parseit(line))
+                    if balanced(txt):
+                        print(self.parseit(txt))
+                        txt = ""
                     i = i + 1
+
+        if len(txt):
+            print("Error: missing ()'s, %s" % txt)
 
     def command_help(self):
         print("Command prefix is %s" % self.command_prefix)
@@ -150,20 +157,39 @@ else:
     atexit.register(readline.write_history_file, histfile)
 
 
+def balanced(txt):
+    opens = re.findall(r"\(", txt)
+    closes = re.findall(r"\)", txt)
+    return len(opens) == len(closes)
+
+
 def repl(comp, prompt="\nPlysp - %s > "):
     comp.command_help()
+    prmpt = prompt
     while True:
         try:
-            txt = input(prompt % comp.current_ns())
-            if re.search(r"^\s*$", txt):
-                continue
-            else:
-                if txt[0 : len(comp.command_prefix)] == comp.command_prefix:
-                    comp.commands(txt)
+            txt = ""
+            while True:
+                txt += input(prmpt % comp.current_ns())
+                if re.search(r"^\s*$", txt):
+                    continue
+
+                if balanced(txt):
+                    prmpt = prompt
+                    debug(logger, "balanced: %s" % txt)
+                    break
                 else:
-                    debug(logger, txt)
-                    print(comp.parseit(txt))
+                    prmpt = "..."
+                    txt += " "
+
+            if txt[0 : len(comp.command_prefix)] == comp.command_prefix:
+                comp.commands(txt)
+            else:
+                debug(logger, txt)
+                print(comp.parseit(txt))
+
         except EOFError:
+
             break
         except KeyboardInterrupt:
             print  # Give user a newline after Cntrl-C for readability

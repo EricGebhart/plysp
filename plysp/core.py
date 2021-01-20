@@ -406,6 +406,7 @@ class Function(ComparableExpr):
         self.env = env  # don't need to do this. just put it in the lambda.
 
         def eval_function(*args):
+            # debug(logger, "Parms: %s" % str(self.parms))
             debug(logger, "Args: %s" % str(args))
             return eval_list(self.body, Env(self.parms, args, self.env))
 
