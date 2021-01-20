@@ -4,7 +4,6 @@ import ply.yacc as yacc
 from lexer import PlyspLex
 from core import (
     Atom,
-    # NMsym,
     Keyword,
     List,
     Vector,
@@ -325,7 +324,7 @@ class PlyspParse(object):
 
     # These can't do this. They should be objects in
     # core that can be called.
-    # It short circuits future compileability.
+    # It short circuits future compile ability.
     def p_sexpr_ns(self, p):
         """sexpr : NS ATOM"""
         p[0] = NewNS(p[2])
@@ -334,17 +333,6 @@ class PlyspParse(object):
         """sexpr : IN_NS ATOM
         | IN_NS PATH"""
         p[0] = In_NS(p[2])
-
-    # Not right. Funcpath should just be a path. and resolve to a func.
-    # This is just a hack so that math/sin and so forth work.
-    def p_sexpr_path(self, p):
-        """sexpr : PATH
-        | PATH sexpr"""
-        print("PATH: ", len(p))
-        if len(p) > 2:
-            p[0] = FuncPath(p[1], p[2:])
-        else:
-            p[0] = Path(p[1])
 
     def p_sexpr_refer(self, p):
         """
@@ -432,4 +420,4 @@ class PlyspParse(object):
         if p:
             print(p.lineno, "Syntax error in input at token '%s'" % p.value)
         else:
-            print("EOF", "Syntax error. No more input.")
+            print(str(p))

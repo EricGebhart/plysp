@@ -421,7 +421,6 @@ def t_discard_rparen(t):
 # comment (ignore)
 def t_discard_comment(t):
     r"(;.*)"
-    pass
 
 
 # C string

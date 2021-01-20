@@ -88,9 +88,18 @@ x
 (def bar (fn [x y & r] (- x y (py-reduce + r))))
 (bar 1 2 4 8 9)
 
-*ns*
-(def y {:foo "bar"})
-(type y)
 (type 1)
 (def z 1)
 (type z)
+
+(do (print "hello") (print "goodbye") (- 44 2))
+
+;; this is a comment.
+(+ 2 2) ; this is a comment.
+
+
+;; -------------Borked stuff--------------
+;; stuff not quite right.
+
+*ns*
+(def y {:foo "bar"})
