@@ -105,6 +105,7 @@ class PlyspLex(object):
         "TRY",
         "CATCH",
         "FINALLY",
+        "THROW",
         "OCTAL",
         "HEX",
         "BASE2",
@@ -251,6 +252,10 @@ class PlyspLex(object):
 
     def t_FINALLY(self, t):
         r"finally"
+        return t
+
+    def t_THROW(self, t):
+        r"throw"
         return t
 
     def t_LETFN(self, t):

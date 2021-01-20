@@ -111,11 +111,27 @@ x
 ;; this is a comment.
 (+ 2 2) ; this is a comment.
 
+(try (throw ValueError "hello")
+     (catch Exception e
+       (print e)))
+
+(try (/ 1 0)
+(catch Exception e
+(print e)))
+
+(try (+ 2 2)
+     (finally
+       (print "hello")))
 
 ;; -------------Borked stuff--------------
 ;; stuff not quite right.
 
-;; NS both of them resolve to the name string, although one issupposed
+;; grammar: I can only have 1 catch or one finally, need any of each.
+(try (+ 2 2) (catch Exception e "hello") (catch valueError e (+ 10 10)))
+
+(try (+ 2 2) (catch Exception e "hello") (finally (+ 10 10)))
+
+;; NS both of them resolve to the name string, although one is supposed
 ;; to be the actual namespace.
 *current-ns*
 *ns*

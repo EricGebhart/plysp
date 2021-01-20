@@ -124,6 +124,137 @@ class Do(ComparableExpr):
         return res
 
 
+class Try(object):
+    """Try to do something, catch exceptions, etc."""
+
+    def __init__(self, expr, *handlers):
+        self.expr = expr
+        self.handlers = handlers
+        self.catches = [c for c in handlers if type(c[0]) is Catch]
+        self.finallys = [f for f in handlers if type(f[0]) is Finally]
+        debug(logger, "handlers %d" % len(self.handlers))
+        debug(
+            logger,
+            "catchs and finallys,  %d - %d" % (len(self.catches), len(self.finallys)),
+        )
+
+    def name(self):
+        return None
+
+    def __str__(self):
+        return "Try"
+
+    def __repr__(self):
+        return "Try"
+
+    def __call__(self, env, rest=None):
+        """Try to do something in a try, look through the catches on exception,
+        The return value is from the thing to do, or from a catch, if not
+        caught the finally's are done and the exception is propogated.
+        execute finallys regardless, for side effects."""
+        res = None
+        raise_it = None
+        exception = None
+        try:
+
+            debug(logger, "Try expr: %s" % str(self.expr))
+            res = eval_list(self.expr, env)
+
+            debug(logger, "Try result: %s" % str(res))
+
+        except Exception as e:
+            debug(logger, "----------------Exception: %s" % e)
+            exception = e
+            for x in self.catches:
+                cort = x[0]
+                debug(logger, "Try to match Catch: %s - %s" % (e, cort.name))
+                debug(logger, "e Class: %s - %s" % (e.__class__, e.__cause__))
+                debug(
+                    logger, "e Class %s - %s" % ((e.__class__ == cort.name), cort.name)
+                )
+                if e.__class__ == cort.name or cort.name == Exception:
+                    env.set_symbol(cort.varname, e)
+                    res = cort(env)
+                    break
+            else:
+                raise_it = True
+
+        finally:
+            for x in self.finallys:
+                cort = x[0]
+                cort(env)  # purposefully ignoring the return value.
+
+        debug(logger, "Try result after: %s" % str(res))
+
+        if raise_it:
+            raise Exception(exception)
+
+        return res
+
+
+class Catch(object):
+    def __init__(self, exception, varname, expr, env):
+        # A path using dots, or a word.
+        debug(logger, "New Catch for %s" % str(exception))
+        self.name = env.find_path([exception])
+        self.expr = expr
+        self.varname = varname
+        debug(logger, "Catch find %s : %s" % (exception, self.name))
+
+    def name(self):
+        return None
+
+    def __str__(self):
+        return "Catch %s" % self.name
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __call__(self, env, rest=None):
+        debug(logger, "Call Catch %s : %s" % (self.name, self.expr))
+        return eval_scalar(self.expr, env)
+
+
+class Finally(object):
+    def __init__(self, expr):
+        # A path using dots, or a word.
+        self.expr = expr
+
+    def name(self):
+        return None
+
+    def __str__(self):
+        return "Finally %s" % self.expr
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __call__(self, env, rest=None):
+        return eval_scalar(self.expr, env)
+
+
+class Throw(object):
+    def __init__(self, exception, expr):
+        # A path using dots, or a word.
+        self.name = exception
+        self.expr = expr
+
+    def name(self):
+        return None
+
+    def __str__(self):
+        return "Throw %s %s" % (self.name, self.expr)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __call__(self, env, rest=None):
+        msg = eval_scalar(self.expr, env)
+        debug(logger, "Raising exception %s with %s" % (self.name, msg))
+        raise Exception(self.name, msg)
+        return
+
+
 class Octal(object):
     pass
 
@@ -646,7 +777,7 @@ def eval_list(contents, env):
         args = map((lambda obj: eval_scalar(obj, env)), rest)
         return first(env, rest)
 
-    if type(first) in (Def, If, Py_interop, Import, Pyattr, Do):
+    if type(first) in (Def, If, Py_interop, Import, Pyattr, Do, Try, Throw):
         return first(env)
 
     # debug(logger, "Returning first env rest: %s" % rest)

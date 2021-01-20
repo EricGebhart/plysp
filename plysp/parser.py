@@ -34,6 +34,10 @@ from core import (
     Anonymous_Arg,
     Function,
     Let,
+    Try,
+    Catch,
+    Finally,
+    Throw,
     Octal,
     Hex,
     Base2,
@@ -248,6 +252,10 @@ class PlyspParse(object):
         "sexprs : sexpr"
         p[0] = p[1]
 
+    # def p_empty():
+    #     "empty :"
+    #     pass
+
     def p_sexprs_sexprs_sexpr(self, p):
         "sexprs : sexprs sexpr"
         # p[0] = ', '.join((p[1], p[2]))
@@ -294,6 +302,32 @@ class PlyspParse(object):
     def p_sexpr_def(self, p):
         "sexpr : DEF sexpr sexpr"
         p[0] = Def(p[2], p[3], self.env)
+
+    def p_sexpr_try(self, p):
+        """sexpr : TRY sexpr catch_finally"""
+        # print("try:", p[2:])
+        p[0] = Try(p[2], p[3:])
+
+    def p_catch(self, p):
+        "catch : LPAREN CATCH ATOM ATOM sexpr RPAREN"
+        # print("p_catch", p[3:])
+        p[0] = Catch(p[3], p[4], p[5], self.env)
+
+    def p_finally(self, p):
+        "finally : LPAREN FINALLY sexpr RPAREN"
+        # print("p_finally", p[3:])
+        p[0] = Finally(p[3])
+
+    def p_catch_finally(self, p):
+        """catch_finally : catch
+        | finally
+        """
+        # print("catch_finally", p[1:])
+        p[0] = p[1]
+
+    def p_sexpr_throw(self, p):
+        "sexpr : THROW ATOM sexpr"
+        p[0] = Throw(p[2], p[3])
 
     def p_sexpr_do(self, p):
         "sexpr : DO sexprs"
