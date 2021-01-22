@@ -304,26 +304,33 @@ class PlyspParse(object):
         p[0] = Def(p[2], p[3], self.env)
 
     def p_sexpr_try(self, p):
-        """sexpr : TRY sexpr catch_finally"""
-        # print("try:", p[2:])
+        """sexpr : TRY sexpr corf_list"""
         p[0] = Try(p[2], p[3:])
 
     def p_catch(self, p):
         "catch : LPAREN CATCH ATOM ATOM sexpr RPAREN"
-        # print("p_catch", p[3:])
         p[0] = Catch(p[3], p[4], p[5], self.env)
 
     def p_finally(self, p):
         "finally : LPAREN FINALLY sexpr RPAREN"
-        # print("p_finally", p[3:])
         p[0] = Finally(p[3])
 
     def p_catch_finally(self, p):
         """catch_finally : catch
         | finally
         """
-        # print("catch_finally", p[1:])
         p[0] = p[1]
+
+    def p_corf_list(self, p):
+        """corf_list : corf_list catch_finally
+        | catch_finally
+        """
+        #         p[0] = p[1:]
+        # p[0] += [p[3]]
+        if len(p) == 2:
+            p[0] = p[1:]
+        else:
+            p[0] = p[1] + p[2:]
 
     def p_sexpr_throw(self, p):
         "sexpr : THROW ATOM sexpr"

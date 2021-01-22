@@ -127,11 +127,16 @@ class Do(ComparableExpr):
 class Try(object):
     """Try to do something, catch exceptions, etc."""
 
-    def __init__(self, expr, *handlers):
+    def __init__(self, expr, handlers):
         self.expr = expr
-        self.handlers = handlers
-        self.catches = [c for c in handlers if type(c[0]) is Catch]
-        self.finallys = [f for f in handlers if type(f[0]) is Finally]
+        self.handlers = handlers[0]
+        debug(logger, "handlers %s" % self.handlers)
+        debug(logger, "handlers len %s" % len(self.handlers))
+        debug(logger, "handlers len %s" % type(self.handlers))
+        for x in self.handlers:
+            debug(logger, "handler: %s   %s" % (x, type(x)))
+        self.catches = [c for c in self.handlers if type(c) is Catch]
+        self.finallys = [f for f in self.handlers if type(f) is Finally]
         debug(logger, "handlers %d" % len(self.handlers))
         debug(
             logger,
@@ -165,14 +170,34 @@ class Try(object):
         except Exception as e:
             debug(logger, "----------------Exception: %s" % e)
             exception = e
-            for x in self.catches:
-                cort = x[0]
-                debug(logger, "Try to match Catch: %s - %s" % (e, cort.name))
-                debug(logger, "e Class: %s - %s" % (e.__class__, e.__cause__))
-                debug(
-                    logger, "e Class %s - %s" % ((e.__class__ == cort.name), cort.name)
-                )
-                if e.__class__ == cort.name or cort.name == Exception:
+            exception_name = re.findall(r"[^' ()][a-zA-Z0-9]*", e.__repr__())[1]
+            debug(logger, "Catches: %s" % (self.catches))
+
+            # look far a catch
+            for cort in self.catches:
+
+                # debug(logger, "Cort: %s" % cort)
+                # debug(logger, "Try to match Catch: %s - %s" % (e, cort.name))
+                # debug(logger, "e Class: %s" % (e.__class__))
+                # debug(
+                #     logger,
+                #     "is instance %s - %s"
+                #     % (isinstance(cort.name, e.__class__), cort.name),
+                # )
+                # print(cort.name, type(cort.name))
+                # print(e, type(e), e.__class__)
+                # print("is equal? %s : %s" % (cort.name, dir(e)))
+
+                # print(
+                #     "~~~~~",
+                #     re.findall(r"[^' ()][a-zA-Z0-9]*", e.__repr__()),
+                #     # re.match(r"Exception\(\'([a-zA-Z0-9])\' .*\)", e.__repr__()),
+                # )
+                # print(e.__repr__())
+
+                if cort.name == exception_name:
+                    # debug(logger, "Found Catch %s" % (cort.name))
+                    # (e.__class__) == type(cort.name) or cort.name == Exception:
                     env.set_symbol(cort.varname, e)
                     res = cort(env)
                     break
@@ -180,8 +205,9 @@ class Try(object):
                 raise_it = True
 
         finally:
-            for x in self.finallys:
-                cort = x[0]
+
+            debug(logger, "Doing Finallys" % self.finallys)
+            for cort in self.finallys:
                 cort(env)  # purposefully ignoring the return value.
 
         debug(logger, "Try result after: %s" % str(res))
@@ -196,7 +222,8 @@ class Catch(object):
     def __init__(self, exception, varname, expr, env):
         # A path using dots, or a word.
         debug(logger, "New Catch for %s" % str(exception))
-        self.name = env.find_path([exception])
+        self.name = exception
+        self.exception = env.find_path([exception])
         self.expr = expr
         self.varname = varname
         debug(logger, "Catch find %s : %s" % (exception, self.name))
@@ -205,13 +232,13 @@ class Catch(object):
         return None
 
     def __str__(self):
-        return "Catch %s" % self.name
+        return "Catch %s %s %s" % (self.name, self.varname, self.expr)
 
     def __repr__(self):
         return self.__str__()
 
     def __call__(self, env, rest=None):
-        debug(logger, "Call Catch %s : %s" % (self.name, self.expr))
+        debug(logger, "Call %s" % self.__str__())
         return eval_scalar(self.expr, env)
 
 
