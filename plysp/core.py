@@ -170,28 +170,12 @@ class Try(object):
         except Exception as e:
             debug(logger, "----------------Exception: %s" % e)
             exception = e
-            exception_name = re.findall(r"[^' ()][a-zA-Z0-9]*", e.__repr__())[1]
-            debug(logger, "Catches: %s" % (self.catches))
 
             # look far a catch
             for catch in self.catches:
 
-                debug(logger, "Catch: %s" % catch)
-                debug(logger, "Try to match Catch: %s - %s" % (e, catch.name))
-                debug(logger, "e Class: %s" % (e.__class__))
-                debug(
-                    logger,
-                    "is instance %s - %s"
-                    % (isinstance(catch.name, e.__class__), catch.name),
-                )
-                debug(logger, "catch %s %s" % (catch.exception, type(catch.exception)))
-                debug(logger, "Exception %s, %s, %s" % (e, type(e), e.__class__))
-                debug(logger, "is equal? %s : %s" % (catch.name, dir(e)))
-
-                # isinstance should be the way to go. something is not right.
-                if catch.name == exception_name:
-                    # if isinstance(e, catch.exception):
-                    debug(logger, "Found Catch %s" % (catch.name))
+                if isinstance(e, catch.exception):
+                    # debug(logger, "Found Catch %s" % (catch.name))
                     # (e.__class__) == type(catch.name) or catch.name == Exception:
                     env.set_symbol(catch.varname, e)
                     res = catch(env)
@@ -204,8 +188,6 @@ class Try(object):
             for final in self.finallys:
                 final(env)  # purposefully ignoring the return value.
 
-        debug(logger, "Try result after: %s" % str(res))
-
         if raise_it:
             raise Exception(exception)
 
@@ -215,12 +197,10 @@ class Try(object):
 class Catch(object):
     def __init__(self, exception, varname, expr, env):
         # A path using dots, or a word.
-        debug(logger, "New Catch for %s" % str(exception))
         self.name = exception
         self.exception = env.find_path([exception])
         self.expr = expr
         self.varname = varname
-        debug(logger, "Catch find %s : %s" % (exception, self.name))
 
     def name(self):
         return None
@@ -259,9 +239,7 @@ class Throw(object):
         # A path using dots, or a word.
         self.name = exception
         self.expr = expr
-        self.exception = env.find_path([exception])()
-        debug(logger, "Type Exception %s " % type(self.exception))
-        debug(logger, "callable? %s " % callable(self.exception))
+        self.exception = env.find_path([exception])
 
     def name(self):
         return None
@@ -276,9 +254,7 @@ class Throw(object):
     # Showing as not callable when I try that.
     def __call__(self, env, rest=None):
         msg = eval_scalar(self.expr, env)
-        debug(logger, "Raising exception %s with %s" % (self.name, msg))
-        raise Exception(self.name, msg)
-        # raise self.exception(msg)
+        raise self.exception(msg)
         return
 
 

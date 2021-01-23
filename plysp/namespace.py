@@ -144,6 +144,7 @@ class Env(dict):
             rest = path_var[1:]
             # debug(logger, "Rest: %s" % rest)
             debug(logger, "found Thing: %s" % type(thing))
+            debug(logger, "Thing callable?: %s" % callable(thing))
 
             if not rest:
                 return thing
