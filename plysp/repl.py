@@ -70,7 +70,7 @@ class compiler(object):
                 if line != "\n":
                     txt += line
                     debug(logger, "*** [%d] %s" % (i, line))
-                    if balanced(txt):
+                    if balanced(txt) == 0:
                         print(self.parseit(txt))
                         txt = ""
                     i = i + 1
@@ -160,7 +160,7 @@ else:
 def balanced(txt):
     opens = re.findall(r"\(", txt)
     closes = re.findall(r"\)", txt)
-    return len(opens) == len(closes)
+    return len(opens) - len(closes)
 
 
 def repl(comp, prompt="\nPlysp - %s > "):
@@ -174,11 +174,18 @@ def repl(comp, prompt="\nPlysp - %s > "):
                 if re.search(r"^\s*$", txt):
                     continue
 
-                if balanced(txt):
+                well_formed = balanced(txt)
+
+                if well_formed == 0:
                     prmpt = prompt
                     debug(logger, "balanced: %s" % txt)
                     break
-                else:
+
+                if well_formed < 0:
+                    # Syntax Error, too many parentheses.
+                    break
+
+                if well_formed > 0:
                     prmpt = "..."
                     txt += " "
 
