@@ -4,7 +4,7 @@ I've been interested in having a lisp with access to the python system for
 a while. Every time I code in Python I miss Lisp. I like python too, but
 sometimes I just don't want to swap out my functional brain for the OO brain
 just to write something with a python library.  I miss multi-arity, multi-functions,
-map, reduce, and easy list manipulation. cond and condp. Let. Nice deconstructors.
+map, reduce, easy list manipulation. macros, cond and condp. Let. Nice deconstructors.
 
 I really like clojure, and that seems like a good fit in many ways, it has
 dictionaries, and sets and lists... But a clojure
@@ -26,19 +26,34 @@ It is, at this point, just an interpreter.  Run the Repl like this,
 you must have python 3.
 
 `python plysp -r`
+`python plysp -r test.yl`
 
-The parser creates python objects.  Compiling is essentially pickling (when I get to it).
-And runtime is asking the objects to execute.
+_test.yl_ is a good indicator of work in progress. Just look at the end to
+see what is being worked on.
+
+The parser creates python objects.  Compiling can be separated from runtime,
+but is currently not. And there is no way to persist a compilation to a file.
+Message Pack is one possible option for object serialization to a file. 
+Pickling is not recommended. 
 
 There are a set of commands in the repl that you can execute to change
 the behavior and to see what is going on in the lexer and parser. This
 should be going away soon, but there will be a better equivalent.
+It has been slowly going away, or breaking as the infrastructure changes.
+They will eventually just be part of the plysp infrastructure in their
+appropriate namespaces.
 
 -help at the repl prompt will give a list of the commands.
 
 ### Namespaces, Python interop, lambda, etc.
 
 There are namespaces, scoping, lambda, define, python interop, immutable collections.
+
+There is a root Namespace named __/__. All namespaces are built as a tree from
+this root namespace. Scoping environments are also Namespaces without a name.
+Scope is created as a singly linked list hanging from it's namespace.
+
+python builtins and lysp core are always loaded/refered in a new namespace.
 
 Namespaces, python interop, it all works. You can create an instance
 of somthing and then use it, and you can access python libraries like
@@ -68,6 +83,79 @@ To make a named function: `(def sqr (fn [x] (* x x)))`
 
 There are some miscellaneous foundation bits to tie together 
 and then all the special symbols which will allow for the creation of Macros.
+
+ * fleshing out of the macro functions.
+ * The symbolic shortcuts for the macro functions.
+ * A sequence to parent the immutable collections.
+ * Some form of lazyness
+ * Tail recursion
+ * A few miscellaneous specials.
+ * Namespaces should import python libs once, and then refer as needed.
+ * Doc strings
+ * Metavars  `^{:type int :doc "an int for something"}`
+ * Loop*, recur*, let*, 
+ * py interop needs a visit.
+ * *current-ns* needs py interop with an object to be useful.
+ * Try/Throw/catch/finally is working, but uses string munging to
+   identify the exception instead of isinstance(). Something is
+   wrong in the python builtins, that I don't have what I think
+   I have in trying to compare what I threw with what I'am looking for.
+ * namespace infrastructure, self documentation, etc.
+ * packages. oy.
+
+## Some other things that work.
+
+```clojure
+    (print "-----------------& rest")
+    (def bar (fn [x y & r] r))
+    (bar 1 2 4 8 9)
+
+    (print "-----------------& rest2")
+    (def bar (fn [x y & r] (- x y (py-reduce + r))))
+    (bar 1 2 4 8 9)
+
+    (print "-----------------type")
+
+    (type 1)
+    (def z 1)
+    (type z)
+
+    (print "-----------------Do on one line")
+    (do (print "hello") (print "goodbye") (- 44 2))
+
+    (do (print "hello")
+        (print "goodbye")
+        (- 44 2))
+
+    ;; this is a comment.
+    (+ 2 2) ; this is a comment.
+
+    (try (throw ValueError "hello")
+        (catch Exception e
+            (print e)))
+
+    (try (/ 1 0)
+        (catch Exception e
+            (print e)))
+
+    (try (throw ValueError "my exception")
+        (catch ValueError e (print e))
+        (catch Exception e (print "caught exception"))
+        (finally (print "hello"))
+        (finally (print "goodbye")))
+
+    (try (+ 2 2)
+        (catch ValueError e (print e))
+        (finally (print "hello"))
+        (finally (print "goodbye")))
+
+    (try (throw Exception "my exception")
+        (catch ValueError e (print e))
+        (catch Exception e (print "caught exception"))
+        (finally (print "hello"))
+        (finally (print "goodbye")))
+
+```
 
 Making generators works...
 
@@ -128,8 +216,9 @@ better or worse.
 
 This isn't clojure. I am a clojure programmer, and this is not that.
 Going with a [BNF](https://en.wikipedia.org/wiki/Backus–Naur_form) 
-parser changes things from the start. But, I know clojure, and I have
-studied source. So it's related, like all lisps.
+parser changes things from the start. Python is a very different thing
+than Java, so it's just going to be different.  I would say this is a lisp
+with a dialect that will be familiar to Clojure programmers.
 [Clojure is here](https://github.com/clojure/clojure)
 
 ### Clojure-py
