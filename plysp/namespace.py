@@ -98,8 +98,8 @@ class Env(dict):
 
     def __builtins__(self):
         """Install the python builtins+."""
-        # should be able to do this with py_import() below
-        # from builtins import *
+
+        # get the python builtins
         [
             self.set_symbol(name, obj)
             for name, obj in __builtins__.items()
@@ -109,12 +109,13 @@ class Env(dict):
         # Get some builtins built in.
         self.update((name, func) for name, func in some_builtins().items())
 
-        # if name == "plysp/core":
-        self.py_import("math")
-        self.py_import("cmath")
-        self.py_import("operator", "op")
-        self.py_import("functools.reduce", "py-reduce")
-        self.py_import("functools.partial", "py-partial")
+        # import some basic stuff.
+        if self.name == "plysp/core":
+            self.py_import("math")
+            self.py_import("cmath")
+            self.py_import("operator", "op")
+            self.py_import("functools.reduce", "py-reduce")
+            self.py_import("functools.partial", "py-partial")
 
         # this should be empty to start and all things
         # go into the namespace until there is a scope.

@@ -334,7 +334,7 @@ class PlyspParse(object):
 
     def p_sexpr_throw(self, p):
         "sexpr : THROW ATOM sexpr"
-        p[0] = Throw(p[2], p[3])
+        p[0] = Throw(p[2], p[3], self.env)
 
     def p_sexpr_do(self, p):
         "sexpr : DO sexprs"

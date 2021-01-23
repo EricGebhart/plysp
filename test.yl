@@ -134,24 +134,22 @@ x
 (try (throw ValueError "my exception")
      (catch ValueError e (print e))
      (catch Exception e (print "caught exception"))
-     (finally (print "Except"))
+     (finally (print "hello"))
      (finally (print "goodbye")))
 
 (try (+ 2 2)
      (catch ValueError e (print e))
-     (finally (print "Except"))
+     (finally (print "hello"))
      (finally (print "goodbye")))
 
 (try (throw Exception "my exception")
      (catch ValueError e (print e))
      (catch Exception e (print "caught exception"))
-     (finally (print "Except"))
+     (finally (print "hello"))
      (finally (print "goodbye")))
 
 ;; -------------Borked stuff--------------
 ;; stuff not quite right.
-
-;; grammar: I can only have 1 catch or one finally, need any of each.
 
 ;; NS both of them resolve to the name string, although one is supposed
 ;; to be the actual namespace.

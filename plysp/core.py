@@ -174,41 +174,35 @@ class Try(object):
             debug(logger, "Catches: %s" % (self.catches))
 
             # look far a catch
-            for cort in self.catches:
+            for catch in self.catches:
 
-                # debug(logger, "Cort: %s" % cort)
-                # debug(logger, "Try to match Catch: %s - %s" % (e, cort.name))
-                # debug(logger, "e Class: %s" % (e.__class__))
-                # debug(
-                #     logger,
-                #     "is instance %s - %s"
-                #     % (isinstance(cort.name, e.__class__), cort.name),
-                # )
-                # print(cort.name, type(cort.name))
-                # print(e, type(e), e.__class__)
-                # print("is equal? %s : %s" % (cort.name, dir(e)))
+                debug(logger, "Catch: %s" % catch)
+                debug(logger, "Try to match Catch: %s - %s" % (e, catch.name))
+                debug(logger, "e Class: %s" % (e.__class__))
+                debug(
+                    logger,
+                    "is instance %s - %s"
+                    % (isinstance(catch.name, e.__class__), catch.name),
+                )
+                debug(logger, "catch %s %s" % (catch.exception, type(catch.exception)))
+                debug(logger, "Exception %s, %s, %s" % (e, type(e), e.__class__))
+                debug(logger, "is equal? %s : %s" % (catch.name, dir(e)))
 
-                # print(
-                #     "~~~~~",
-                #     re.findall(r"[^' ()][a-zA-Z0-9]*", e.__repr__()),
-                #     # re.match(r"Exception\(\'([a-zA-Z0-9])\' .*\)", e.__repr__()),
-                # )
-                # print(e.__repr__())
-
-                if cort.name == exception_name:
-                    # debug(logger, "Found Catch %s" % (cort.name))
-                    # (e.__class__) == type(cort.name) or cort.name == Exception:
-                    env.set_symbol(cort.varname, e)
-                    res = cort(env)
+                # isinstance should be the way to go. something is not right.
+                if catch.name == exception_name:
+                    # if isinstance(e, catch.exception):
+                    debug(logger, "Found Catch %s" % (catch.name))
+                    # (e.__class__) == type(catch.name) or catch.name == Exception:
+                    env.set_symbol(catch.varname, e)
+                    res = catch(env)
                     break
             else:
                 raise_it = True
 
         finally:
 
-            debug(logger, "Doing Finallys" % self.finallys)
-            for cort in self.finallys:
-                cort(env)  # purposefully ignoring the return value.
+            for final in self.finallys:
+                final(env)  # purposefully ignoring the return value.
 
         debug(logger, "Try result after: %s" % str(res))
 
@@ -261,10 +255,13 @@ class Finally(object):
 
 
 class Throw(object):
-    def __init__(self, exception, expr):
+    def __init__(self, exception, expr, env):
         # A path using dots, or a word.
         self.name = exception
         self.expr = expr
+        self.exception = env.find_path([exception])()
+        debug(logger, "Type Exception %s " % type(self.exception))
+        debug(logger, "callable? %s " % callable(self.exception))
 
     def name(self):
         return None
@@ -275,10 +272,13 @@ class Throw(object):
     def __repr__(self):
         return self.__str__()
 
+    # ideally we want to raise the real Exception instead of just Exception
+    # Showing as not callable when I try that.
     def __call__(self, env, rest=None):
         msg = eval_scalar(self.expr, env)
         debug(logger, "Raising exception %s with %s" % (self.name, msg))
         raise Exception(self.name, msg)
+        # raise self.exception(msg)
         return
 
 
@@ -590,7 +590,6 @@ class If(object):
         return "(if %s %s %s)" % (self.test, self.true_expr, self.false_expr)
 
     def __call__(self, env):
-        # print(self.symbol.__str__(), self.rest)
         if eval_scalar(self.test, env):
             return eval_scalar(self.true_expr, env)
         else:
