@@ -31,6 +31,8 @@ class Env(dict):
         self.compiler = compiler
         self.name = name
         self.eval_verbose = False
+        self.args = args
+        self.parms = parms
 
         if name is not None:
             debug(logger, "-- NewENV: %s" % name)
@@ -52,39 +54,41 @@ class Env(dict):
             self.update({parms: list(args)})
 
         else:
-            if args and parms:
-                # debug(logger, "Args: %s" % str(args))
-                # debug(logger, "Parms: %s" % str(parms))
+            self.deconst(args, parms)
 
-                amp = None
+    def deconst(self, args, parms):
+        """Deconstruct and combine the args and parms into the scope."""
+        if args and parms:
+            amp = None
 
-                for i in range(len(parms)):
-                    p = parms[i]
+            for i in range(len(parms)):
+                p = parms[i]
 
-                    if p.__str__() == "&":
-                        debug(logger, "p __str: %s" % p.__str__())
-                        amp = i
-                        break
+                if p.__str__() == "&":
+                    debug(logger, "p __str: %s" % p.__str__())
+                    amp = i
+                    break
 
-                if amp is not None:
-                    pcount = len(parms)
-                    if len(args) < pcount - 1:
-                        raise TypeError(
-                            "expected %s, given %s, " % (str(parms), str(args))
-                        )
+            if amp is not None:
+                debug(logger, "Amp: %d" % amp)
 
-                    rest = args[amp:]
-                    newparms = [p.name[0] for p in parms[:amp]]
-                    self.update(list(zip(newparms, args[:amp])))
-                    restparm = parms.__getitem__(parms.__len__() - 1).__str__()
-                    self.set_symbol(restparm, ImList(rest))
-
-                elif len(args) != len(parms):
+                pcount = len(parms)
+                if len(args) < pcount - 1:
                     raise TypeError("expected %s, given %s, " % (str(parms), str(args)))
 
-                else:
-                    parms = [p.__str__() for p in parms]
-                    self.update(list(zip(parms, args)))
+                rest = args[amp:]
+                newparms = [p.name[0] for p in parms[:amp]]
+                self.update(list(zip(newparms, args[:amp])))
+
+                restparm = parms.__getitem__(parms.__len__() - 1).__str__()
+                self.set_symbol(restparm, ImList(rest))
+
+            elif len(args) != len(parms):
+                raise TypeError("expected %s, given %s, " % (str(parms), str(args)))
+
+            else:
+                parms = [p.__str__() for p in parms]
+                self.update(list(zip(parms, args)))
 
     def __builtins__(self):
         """Install the python builtins+."""
