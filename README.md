@@ -96,10 +96,6 @@ and then all the special symbols which will allow for the creation of Macros.
  * Loop*, recur*, let*, 
  * py interop needs a visit.
  * *current-ns* needs py interop with an object to be useful.
- * Try/Throw/catch/finally is working, but uses string munging to
-   identify the exception instead of isinstance(). Something is
-   wrong in the python builtins, that I don't have what I think
-   I have in trying to compare what I threw with what I'am looking for.
  * namespace infrastructure, self documentation, etc.
  * packages. oy.
 
