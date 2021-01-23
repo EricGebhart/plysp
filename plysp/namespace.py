@@ -46,20 +46,20 @@ class Env(dict):
             # Switch to this new namespace env.
             Env.current_ns = self
 
+        self.__setitem__("*env*", self)
+
         if isinstance(parms, Symbol):  # just case.
             self.update({parms: list(args)})
 
         else:
-            if args and parms:  # Needs & for rest...research...
-                debug(logger, "Args: %s" % str(args))
-                debug(logger, "Parms: %s" % str(parms))
+            if args and parms:
+                # debug(logger, "Args: %s" % str(args))
+                # debug(logger, "Parms: %s" % str(parms))
 
                 amp = None
+
                 for i in range(len(parms)):
-                    debug(logger, "parms: %s" % parms[i])
-                    debug(logger, "parms: %s" % parms[i])
                     p = parms[i]
-                    debug(logger, "parms: %s" % type(p))
 
                     if p.__str__() == "&":
                         debug(logger, "p __str: %s" % p.__str__())
@@ -67,27 +67,17 @@ class Env(dict):
                         break
 
                 if amp is not None:
-                    debug(logger, "Amp: %d" % amp)
-
                     pcount = len(parms)
-                    debug(logger, "Amp %d, lenargs %d" % (amp, len(args)))
                     if len(args) < pcount - 1:
                         raise TypeError(
                             "expected %s, given %s, " % (str(parms), str(args))
                         )
+
                     rest = args[amp:]
                     newparms = [p.name[0] for p in parms[:amp]]
-                    debug(logger, "NewParms: %s" % newparms)
                     self.update(list(zip(newparms, args[:amp])))
                     restparm = parms.__getitem__(parms.__len__() - 1).__str__()
                     self.set_symbol(restparm, ImList(rest))
-
-                    debug(logger, "restparm: %s" % restparm)
-                    debug(logger, "NewArgs: %s" % str(args[:amp]))
-                    debug(logger, "env: %s" % self.items())
-                    debug(logger, "keys: %s" % self.keys())
-                    debug(logger, "Rest: %s" % str(self.__getitem__("r")))
-                    debug(logger, "Type Rest: %s" % type(self.__getitem__("r")))
 
                 elif len(args) != len(parms):
                     raise TypeError("expected %s, given %s, " % (str(parms), str(args)))
@@ -144,7 +134,6 @@ class Env(dict):
             rest = path_var[1:]
             # debug(logger, "Rest: %s" % rest)
             debug(logger, "found Thing: %s" % type(thing))
-            debug(logger, "Thing callable?: %s" % callable(thing))
 
             if not rest:
                 return thing
