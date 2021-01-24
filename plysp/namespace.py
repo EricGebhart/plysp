@@ -22,7 +22,7 @@ class Env(dict):
     current_ns = None
     root = None
 
-    def __init__(self, parms=(), args=(), outer=None, name=None, compiler=None):
+    def __init__(self, bindings=[], outer=None, name=None, compiler=None):
         # Bind parm list to corresponding args, or single parm to list of args
 
         # Need to bind very first outer with the plysp/core env when
@@ -31,8 +31,9 @@ class Env(dict):
         self.compiler = compiler
         self.name = name
         self.eval_verbose = False
-        self.args = args
-        self.parms = parms
+        self.bindings = bindings
+
+        debug(logger, "-- NewENV")
 
         if name is not None:
             debug(logger, "-- NewENV: %s" % name)
@@ -48,47 +49,13 @@ class Env(dict):
             # Switch to this new namespace env.
             Env.current_ns = self
 
-        self.__setitem__("*env*", self)
+        # self.__setitem__("*env*", self)
 
-        if isinstance(parms, Symbol):  # just case.
-            self.update({parms: list(args)})
+        if self.bindings:
+            debug(logger, "updating with bindings %s" % self.bindings)
+            self.update(self.bindings)
 
-        else:
-            self.deconst(args, parms)
-
-    def deconst(self, args, parms):
-        """Deconstruct and combine the args and parms into the scope."""
-        if args and parms:
-            amp = None
-
-            for i in range(len(parms)):
-                p = parms[i]
-
-                if p.__str__() == "&":
-                    debug(logger, "p __str: %s" % p.__str__())
-                    amp = i
-                    break
-
-            if amp is not None:
-                debug(logger, "Amp: %d" % amp)
-
-                pcount = len(parms)
-                if len(args) < pcount - 1:
-                    raise TypeError("expected %s, given %s, " % (str(parms), str(args)))
-
-                rest = args[amp:]
-                newparms = [p.name[0] for p in parms[:amp]]
-                self.update(list(zip(newparms, args[:amp])))
-
-                restparm = parms.__getitem__(parms.__len__() - 1).__str__()
-                self.set_symbol(restparm, ImList(rest))
-
-            elif len(args) != len(parms):
-                raise TypeError("expected %s, given %s, " % (str(parms), str(args)))
-
-            else:
-                parms = [p.__str__() for p in parms]
-                self.update(list(zip(parms, args)))
+        debug(logger, "Items %s" % self.items())
 
     def __builtins__(self):
         """Install the python builtins+."""
@@ -133,10 +100,10 @@ class Env(dict):
 
         thing = None
         if path_var[0] in self:
-            # debug(logger, "path_var[0]: %s" % path_var[0])
+            debug(logger, "path_var[0]: %s" % path_var[0])
             thing = self.__getitem__(path_var[0])
             rest = path_var[1:]
-            # debug(logger, "Rest: %s" % rest)
+            debug(logger, "Rest: %s" % rest)
             debug(logger, "found Thing: %s" % type(thing))
 
             if not rest:
@@ -151,7 +118,7 @@ class Env(dict):
 
         else:
             if self.outer:
-                # debug(logger, "looking outside: %s" % path_var)
+                debug(logger, "looking outside: %s" % path_var)
                 thing = self.outer.find_path(path_var)
 
         return thing

@@ -90,7 +90,8 @@ class Atom(ComparableExpr):
     def __call__(self, env, rest=None):
         val = env.find(self.name)
 
-        debug(logger, "- Env %s : keys ---- %s" % (env.name, env.keys()))
+        debug(logger, "- Env %s" % env.get(self.name[0]))
+        debug(logger, "- Env %s : items ---- %s" % (env.name, env.items()))
         debug(logger, "- %s : Type ---- %s" % (self.name, type(val)))
         if val is callable:
             debug(logger, "- %s " % val(1))
@@ -537,18 +538,91 @@ class Function(ComparableExpr):
         return "(fn %s %s)" % (self.parms, self.body)
 
     def __call__(self, env):
-        self.env = env  # don't need to do this. just put it in the lambda.
+        self.env = env
 
+        # use the env we are referenced from when we are called later.
         def eval_function(*args):
             # debug(logger, "Parms: %s" % str(self.parms))
             debug(logger, "Args: %s" % str(args))
-            return eval_list(self.body, Env(self.parms, args, self.env))
+            bindings = self.deconst(args, self.parms)
+            debug(logger, "Type Bindings: %s " % type(bindings))
+            debug(logger, "bindngs %s" % bindings)
+            return eval_list(self.body, Env(outer=env, bindings=bindings))
 
         return eval_function
 
+    def deconst(self, args, parms):
+        """Deconstruct and combine the args and parms into the scope."""
+        res = None
+        if args and parms:
+            amp = None
+
+            debug(logger, "args %s and parms: %s" % (args, parms))
+
+            for i in range(len(parms)):
+                p = parms[i]
+
+                if p.__str__() == "&":
+                    debug(logger, "p __str: %s" % p.__str__())
+                    amp = i
+                    break
+
+            if amp is not None:
+                debug(logger, "Amp: %d" % amp)
+
+                pcount = len(parms)
+                if len(args) < pcount - 1:
+                    raise TypeError("expected %s, given %s, " % (str(parms), str(args)))
+
+                rest = args[amp:]
+                newparms = [p.name[0] for p in parms[:amp]]
+                res = list(zip(newparms, args[:amp]))
+
+                restparm = parms.__getitem__(parms.__len__() - 1).__str__()
+                res.append((restparm, ImList(rest)))
+                debug(logger, "Res: %s" % res)
+
+            elif len(args) != len(parms):
+                raise TypeError("expected %s, given %s, " % (str(parms), str(args)))
+
+            else:
+                parms = [p.__str__() for p in parms]
+                res = list(zip(parms, args))
+
+        return res
+
+
+def partition(list, size):
+    res = []
+
+    for i in range(0, len(list), 2):
+        k, v = list[i : i + 2]
+        res.append((k.name[0], v))
+
+    return res
+
+
+def partition_bindings(bindings):
+    if len(bindings) % 2 != 0:
+        raise SyntaxError("Binding must have an even number of entries")
+
+    return partition(bindings, 2)
+
 
 class Let(ComparableExpr):
-    pass
+    def __init__(self, bindings, body, env):
+        self.body = body
+        self.env = env
+        self.bindings = partition_bindings(bindings)
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return "(let* %s %s)" % (self.bindings, self.body)
+
+    def __call__(self, env):
+        return eval_list(self.body, Env(outer=env, bindings=self.bindings))
 
 
 class UnknownVariable(Exception):
@@ -779,7 +853,18 @@ def eval_list(contents, env):
         args = map((lambda obj: eval_scalar(obj, env)), rest)
         return first(env, rest)
 
-    if type(first) in (Def, If, Py_interop, Import, Pyattr, Do, Try, Throw):
+    if type(first) in (
+        Def,
+        If,
+        Py_interop,
+        Import,
+        Pyattr,
+        Do,
+        Try,
+        Throw,
+        Catch,
+        Let,
+    ):
         return first(env)
 
     # debug(logger, "Returning first env rest: %s" % rest)

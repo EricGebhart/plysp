@@ -100,6 +100,12 @@ x
 (def z 1)
 (type z)
 
+(type TypeError)
+(dir TypeError)
+(callable TypeError)
+(isinstance (TypeError) TypeError)
+
+
 (print "-----------------Do on one line")
 (do (print "hello") (print "goodbye") (- 44 2))
 
@@ -111,13 +117,15 @@ x
 ;; this is a comment.
 (+ 2 2) ; this is a comment.
 
+(print "-----------------------Try/Throw/Catch/Finally")
+
 (try (throw ValueError "hello")
      (catch Exception e
        (print e)))
 
 (try (/ 1 0)
-(catch Exception e
-(print e)))
+     (catch Exception e
+       (print e)))
 
 (try (+ 2 2)
      (finally
@@ -148,6 +156,11 @@ x
      (finally (print "hello"))
      (finally (print "goodbye")))
 
+(print "-----------------------Binding forms")
+
+(let* [x 1 y 2]
+  (+ x y))
+
 ;; -------------Borked stuff--------------
 ;; stuff not quite right.
 
@@ -155,6 +168,9 @@ x
 ;; to be the actual namespace.
 *current-ns*
 *ns*
+
+;; (dir *ns*) ;; works.
+;; (.items *ns* ;; doesn't work  object bit is missing.
 
 ;; maps just don't work yet really. This does, but not much else.
 (def y {:foo "bar"})
